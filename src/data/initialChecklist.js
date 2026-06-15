@@ -20,4 +20,6 @@ const initialChecklist = {
   ],
 }
 
+export const defaultChecklistTemplate = initialChecklist['project-1']
+
 export default initialChecklist

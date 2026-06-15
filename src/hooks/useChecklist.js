@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { STORAGE_KEYS } from '../constants/app'
-import initialChecklist from '../data/initialChecklist'
+import initialChecklist, {
+  defaultChecklistTemplate,
+} from '../data/initialChecklist'
 
 function loadChecklists() {
   try {
@@ -27,6 +29,10 @@ function createChecklistItemId() {
   }
 
   return `task-${Date.now()}`
+}
+
+function cloneChecklistItems(items) {
+  return items.map((item) => ({ ...item }))
 }
 
 function useChecklist(projectId) {
@@ -96,12 +102,28 @@ function useChecklist(projectId) {
     )
   }
 
+  function resetChecklist(targetProjectId = projectId) {
+    if (!targetProjectId) {
+      return
+    }
+
+    const template = Array.isArray(initialChecklist[targetProjectId])
+      ? initialChecklist[targetProjectId]
+      : defaultChecklistTemplate
+
+    setChecklists((currentChecklists) => ({
+      ...currentChecklists,
+      [targetProjectId]: cloneChecklistItems(template),
+    }))
+  }
+
   return {
     items,
     completedCount,
     addItem,
     toggleItem,
     deleteItem,
+    resetChecklist,
   }
 }
 

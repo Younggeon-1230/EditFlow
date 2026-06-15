@@ -1748,9 +1748,33 @@ a {
   border-bottom: 1px solid #e5e5e5;
 }
 
-.checklist-list-heading > span {
+.checklist-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.checklist-list-actions > span {
   color: #888;
   font-size: 0.78rem;
+}
+
+.checklist-list-actions > button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #d7d7d7;
+  border-radius: 8px;
+  color: #666;
+  background: #fff;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.checklist-list-actions > button:hover {
+  border-color: #aaa;
+  color: #333;
+  background: #f6f6f6;
 }
 
 .checklist-page-list {
@@ -1940,6 +1964,7 @@ a {
 .broll-categories button:focus-visible,
 .broll-preview-image:focus-visible,
 .save-broll-button:focus-visible,
+.checklist-list-actions > button:focus-visible,
 .checklist-page-item > button:focus-visible,
 .checklist-add-form button:focus-visible {
   outline: 3px solid #9f9f9f;
@@ -2174,6 +2199,16 @@ a {
   .checklist-list-heading,
   .checklist-add-form {
     padding: 22px 18px;
+  }
+
+  .checklist-list-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .checklist-list-actions {
+    justify-content: space-between;
+    width: 100%;
   }
 
   .checklist-page-item {

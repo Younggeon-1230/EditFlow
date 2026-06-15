@@ -1,6 +1,6 @@
 import ChecklistItem from './ChecklistItem'
 
-function ChecklistPanel({ items, onToggle, onDelete }) {
+function ChecklistPanel({ items, onToggle, onDelete, onReset }) {
   return (
     <section className="checklist-list-card">
       <div className="checklist-list-heading">
@@ -8,7 +8,12 @@ function ChecklistPanel({ items, onToggle, onDelete }) {
           <p className="resource-type">TASK LIST</p>
           <h2>체크리스트</h2>
         </div>
-        <span>{items.length}개 항목</span>
+        <div className="checklist-list-actions">
+          <span>{items.length}개 항목</span>
+          <button onClick={onReset} type="button">
+            기본 체크리스트 복원
+          </button>
+        </div>
       </div>
 
       {items.length > 0 ? (
