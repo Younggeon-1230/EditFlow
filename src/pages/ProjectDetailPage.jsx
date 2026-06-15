@@ -6,6 +6,7 @@ import ProjectInfo from '../components/projectDetail/ProjectInfo'
 import ProjectTabs from '../components/projectDetail/ProjectTabs'
 import ReferencePanel from '../components/projectDetail/ReferencePanel'
 import ThumbnailPanel from '../components/projectDetail/ThumbnailPanel'
+import { ROUTES } from '../constants/app'
 import projectDetailSamples from '../data/projectDetailSamples'
 import useProjects from '../hooks/useProjects'
 
@@ -28,7 +29,7 @@ function ProjectDetailPage() {
           <p className="page-eyebrow">PROJECT NOT FOUND</p>
           <h1>프로젝트를 찾을 수 없습니다.</h1>
           <p>삭제되었거나 존재하지 않는 프로젝트입니다.</p>
-          <Link className="secondary-button link-button" to="/projects">
+          <Link className="secondary-button link-button" to={ROUTES.projects}>
             프로젝트 목록으로
           </Link>
         </section>
@@ -40,7 +41,7 @@ function ProjectDetailPage() {
 
   return (
     <main className="project-detail-page">
-      <Link className="detail-back-link" to="/projects">
+      <Link className="detail-back-link" to={ROUTES.projects}>
         <span aria-hidden="true">←</span> 프로젝트 목록
       </Link>
 

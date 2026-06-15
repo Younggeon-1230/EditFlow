@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { STORAGE_KEYS } from '../constants/app'
 import initialChecklist from '../data/initialChecklist'
-
-const STORAGE_KEY = 'editflow_checklists'
 
 function loadChecklists() {
   try {
-    const storedChecklists = localStorage.getItem(STORAGE_KEY)
+    const storedChecklists = localStorage.getItem(STORAGE_KEYS.checklists)
 
     if (!storedChecklists) {
       return initialChecklist
@@ -43,7 +42,7 @@ function useChecklist(projectId) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(checklists))
+      localStorage.setItem(STORAGE_KEYS.checklists, JSON.stringify(checklists))
     } catch {
       // Keep checklist editing available in memory when storage is blocked.
     }

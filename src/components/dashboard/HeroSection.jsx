@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/app'
 
 function HeroSection() {
   const navigate = useNavigate()
@@ -13,7 +14,7 @@ function HeroSection() {
       <button
         className="primary-button"
         type="button"
-        onClick={() => navigate('/projects')}
+        onClick={() => navigate(ROUTES.projects)}
       >
         <span aria-hidden="true">+</span> 새 프로젝트 만들기
       </button>

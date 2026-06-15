@@ -1,10 +1,11 @@
 import { useState } from 'react'
-
-const STORAGE_KEY = 'editflow_saved_brolls'
+import { STORAGE_KEYS } from '../../constants/app'
 
 function isAssetSaved(assetId) {
   try {
-    const savedAssets = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
+    const savedAssets = JSON.parse(
+      localStorage.getItem(STORAGE_KEYS.savedBrolls) ?? '[]',
+    )
     return Array.isArray(savedAssets)
       ? savedAssets.some((asset) => asset.id === assetId)
       : false
@@ -18,12 +19,14 @@ function SaveBrollButton({ asset }) {
 
   function handleSave() {
     try {
-      const storedValue = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
+      const storedValue = JSON.parse(
+        localStorage.getItem(STORAGE_KEYS.savedBrolls) ?? '[]',
+      )
       const savedAssets = Array.isArray(storedValue) ? storedValue : []
 
       if (!savedAssets.some((savedAsset) => savedAsset.id === asset.id)) {
         localStorage.setItem(
-          STORAGE_KEY,
+          STORAGE_KEYS.savedBrolls,
           JSON.stringify([
             ...savedAssets,
             { ...asset, savedAt: new Date().toISOString() },

@@ -1,10 +1,11 @@
 import { useState } from 'react'
-
-const STORAGE_KEY = 'editflow_saved_references'
+import { STORAGE_KEYS } from '../../constants/app'
 
 function isVideoSaved(videoId) {
   try {
-    const savedVideos = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
+    const savedVideos = JSON.parse(
+      localStorage.getItem(STORAGE_KEYS.savedReferences) ?? '[]',
+    )
     return Array.isArray(savedVideos)
       ? savedVideos.some((video) => video.id === videoId)
       : false
@@ -18,12 +19,14 @@ function SaveToProjectButton({ video }) {
 
   function handleSave() {
     try {
-      const storedValue = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
+      const storedValue = JSON.parse(
+        localStorage.getItem(STORAGE_KEYS.savedReferences) ?? '[]',
+      )
       const savedVideos = Array.isArray(storedValue) ? storedValue : []
 
       if (!savedVideos.some((savedVideo) => savedVideo.id === video.id)) {
         localStorage.setItem(
-          STORAGE_KEY,
+          STORAGE_KEYS.savedReferences,
           JSON.stringify([
             ...savedVideos,
             { ...video, savedAt: new Date().toISOString() },

@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { generatePath, Link } from 'react-router-dom'
+import { ROUTES } from '../../constants/app'
 
 function ProjectCard({ project, onEdit, onDelete }) {
   const rawChecklistProgress =
@@ -50,7 +51,10 @@ function ProjectCard({ project, onEdit, onDelete }) {
       </div>
 
       <div className="project-card-actions">
-        <Link className="card-detail-button" to={`/projects/${project.id}`}>
+        <Link
+          className="card-detail-button"
+          to={generatePath(ROUTES.projectDetail, { projectId: project.id })}
+        >
           상세보기
         </Link>
         <button className="card-action-button" onClick={() => onEdit(project)}>

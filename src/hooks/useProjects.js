@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { STORAGE_KEYS } from '../constants/app'
 import initialProjects from '../data/initialProjects'
-
-const STORAGE_KEY = 'editflow_projects'
 
 function loadProjects() {
   try {
-    const storedProjects = localStorage.getItem(STORAGE_KEY)
+    const storedProjects = localStorage.getItem(STORAGE_KEYS.projects)
 
     if (!storedProjects) {
       return initialProjects
@@ -32,7 +31,7 @@ function useProjects() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
+      localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(projects))
     } catch {
       // Keep the in-memory project list usable when browser storage is blocked.
     }
