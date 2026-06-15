@@ -1,0 +1,22 @@
+{
+  "stats": [
+    {
+      "id": "projects",
+      "title": "진행 중 프로젝트",
+      "value": 3,
+      "to": "/projects"
+    },
+    {
+      "id": "references",
+      "title": "저장한 레퍼런스",
+      "value": 28,
+      "to": "/reference"
+    },
+    {
+      "id": "checklists",
+      "title": "완료한 체크리스트",
+      "value": 12,
+      "to": "/checklist"
+    }
+  ]
+}
