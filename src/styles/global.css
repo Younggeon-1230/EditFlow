@@ -2,20 +2,20 @@
   font-family:
     Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #202124;
-  background: #f4f7ff;
-  --color-ink: #172033;
-  --color-muted: #69738a;
-  --color-soft: #eef4ff;
-  --color-surface: rgba(255, 255, 255, 0.9);
-  --color-border: #d9e2f4;
-  --color-primary: #4f46e5;
-  --color-primary-deep: #3730a3;
-  --color-cyan: #0891b2;
-  --color-emerald: #059669;
-  --color-violet: #7c3aed;
-  --color-danger: #dc2626;
-  --shadow-soft: 0 16px 42px rgba(55, 48, 163, 0.1);
-  --shadow-card: 0 10px 28px rgba(31, 41, 55, 0.08);
+  background: #fff7ed;
+  --color-ink: #332117;
+  --color-muted: #806f63;
+  --color-soft: #fff1df;
+  --color-surface: rgba(255, 253, 247, 0.92);
+  --color-border: #f3d8bf;
+  --color-primary: #e46f5d;
+  --color-primary-deep: #9f3f2f;
+  --color-cyan: #f59e42;
+  --color-emerald: #e5b73b;
+  --color-violet: #d45b4b;
+  --color-danger: #c24132;
+  --shadow-soft: 0 16px 42px rgba(180, 83, 9, 0.13);
+  --shadow-card: 0 10px 28px rgba(120, 53, 15, 0.09);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -28,12 +28,13 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
   background:
-    radial-gradient(circle at 12% 4%, rgba(79, 70, 229, 0.14), transparent 28%),
-    radial-gradient(circle at 82% 10%, rgba(8, 145, 178, 0.14), transparent 24%),
-    linear-gradient(rgba(191, 219, 254, 0.4) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(191, 219, 254, 0.36) 1px, transparent 1px),
-    linear-gradient(180deg, #f7fbff 0%, #f3f5ff 46%, #f8fbff 100%);
+    radial-gradient(circle at 12% 4%, rgba(244, 114, 82, 0.15), transparent 28%),
+    radial-gradient(circle at 82% 10%, rgba(245, 158, 66, 0.16), transparent 24%),
+    linear-gradient(rgba(251, 191, 36, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(251, 146, 60, 0.18) 1px, transparent 1px),
+    linear-gradient(180deg, #fffaf0 0%, #fff4e6 46%, #fffdf5 100%);
   background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px, 100% 100%;
 }
 
@@ -48,15 +49,16 @@ a {
 
 .app {
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .site-header {
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.08);
+  border-bottom: 1px solid rgba(217, 119, 6, 0.18);
+  background: rgba(255, 250, 240, 0.86);
+  box-shadow: 0 10px 30px rgba(180, 83, 9, 0.08);
   backdrop-filter: blur(16px);
 }
 
@@ -86,7 +88,7 @@ a {
 .navigation-link {
   padding: 10px 14px;
   border-radius: 8px;
-  color: #5f6c83;
+  color: #766256;
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
@@ -97,13 +99,13 @@ a {
 
 .navigation-link:hover {
   color: var(--color-primary-deep);
-  background: rgba(79, 70, 229, 0.08);
+  background: rgba(251, 146, 60, 0.12);
 }
 
 .navigation-link.active {
   color: #fff;
   background: linear-gradient(135deg, var(--color-primary), var(--color-cyan));
-  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.22);
+  box-shadow: 0 8px 18px rgba(234, 88, 12, 0.22);
 }
 
 .dashboard-page {
@@ -1986,8 +1988,8 @@ a {
   border-radius: 999px;
   background: linear-gradient(
     135deg,
-    rgba(79, 70, 229, 0.15),
-    rgba(8, 145, 178, 0.12)
+    rgba(244, 114, 82, 0.16),
+    rgba(245, 158, 66, 0.14)
   );
   content: "";
   filter: blur(34px);
@@ -1998,10 +2000,10 @@ a {
   align-items: center;
   min-height: 30px;
   padding: 0 13px;
-  border: 1px solid rgba(79, 70, 229, 0.18);
+  border: 1px solid rgba(234, 88, 12, 0.18);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 8px 22px rgba(79, 70, 229, 0.08);
+  box-shadow: 0 8px 22px rgba(234, 88, 12, 0.08);
 }
 
 .hero-section h1,
@@ -2016,7 +2018,7 @@ a {
 }
 
 .hero-section h1 {
-  background: linear-gradient(135deg, #111827 22%, var(--color-primary) 58%, var(--color-cyan));
+  background: linear-gradient(135deg, #2f1f17 22%, var(--color-primary) 58%, var(--color-cyan));
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -2029,6 +2031,7 @@ a {
 .project-info-main > p,
 .project-card-copy p {
   color: var(--color-muted);
+  overflow-wrap: anywhere;
 }
 
 .primary-button,
@@ -2039,7 +2042,7 @@ a {
   border: 0;
   color: #fff;
   background: linear-gradient(135deg, var(--color-primary), var(--color-cyan));
-  box-shadow: 0 12px 26px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 12px 26px rgba(234, 88, 12, 0.24);
 }
 
 .primary-button:hover,
@@ -2047,38 +2050,38 @@ a {
 .form-submit-button:hover,
 .reference-search-input button:hover:not(:disabled),
 .checklist-add-form button:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--color-primary-deep), #0e7490);
-  box-shadow: 0 16px 34px rgba(79, 70, 229, 0.3);
+  background: linear-gradient(135deg, var(--color-primary-deep), #d97706);
+  box-shadow: 0 16px 34px rgba(234, 88, 12, 0.28);
 }
 
 .secondary-button,
 .card-action-button,
 .icon-button,
 .checklist-list-actions > button {
-  border-color: rgba(79, 70, 229, 0.18);
+  border-color: rgba(217, 119, 6, 0.22);
   color: var(--color-primary-deep);
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 253, 247, 0.88);
 }
 
 .secondary-button:hover,
 .card-action-button:hover,
 .icon-button:hover,
 .checklist-list-actions > button:hover {
-  border-color: rgba(79, 70, 229, 0.38);
+  border-color: rgba(217, 119, 6, 0.38);
   color: var(--color-primary);
-  background: rgba(79, 70, 229, 0.08);
+  background: rgba(255, 237, 213, 0.82);
 }
 
 .card-action-button.delete,
 .checklist-page-item > button {
-  color: #8b5cf6;
+  color: #b45309;
 }
 
 .card-action-button.delete:hover,
 .checklist-page-item > button:hover {
-  border-color: rgba(220, 38, 38, 0.2);
+  border-color: rgba(194, 65, 50, 0.22);
   color: var(--color-danger);
-  background: rgba(254, 242, 242, 0.88);
+  background: rgba(255, 237, 213, 0.88);
 }
 
 .summary-card,
@@ -2156,24 +2159,24 @@ a {
 .project-card:hover,
 .reference-result-card:hover,
 .broll-result-card:hover {
-  border-color: rgba(79, 70, 229, 0.32);
+  border-color: rgba(234, 88, 12, 0.3);
   box-shadow: var(--shadow-soft);
 }
 
 .summary-card-icon {
-  border-color: rgba(79, 70, 229, 0.18);
+  border-color: rgba(234, 88, 12, 0.18);
   color: var(--color-primary-deep);
-  background: linear-gradient(135deg, #eef2ff, #ecfeff);
+  background: linear-gradient(135deg, #fff1df, #fff7c2);
 }
 
 .summary-card:nth-child(2) .summary-card-icon {
-  color: #6d28d9;
-  background: linear-gradient(135deg, #f5f3ff, #eef2ff);
+  color: #b45309;
+  background: linear-gradient(135deg, #ffedd5, #fef3c7);
 }
 
 .summary-card:nth-child(3) .summary-card-icon {
-  color: #047857;
-  background: linear-gradient(135deg, #ecfdf5, #ecfeff);
+  color: #92400e;
+  background: linear-gradient(135deg, #fef3c7, #fff7ed);
 }
 
 .summary-card-title,
@@ -2203,22 +2206,22 @@ a {
 }
 
 .project-status {
-  border: 1px solid rgba(79, 70, 229, 0.18);
+  border: 1px solid rgba(234, 88, 12, 0.18);
   color: var(--color-primary-deep);
-  background: linear-gradient(135deg, #eef2ff, #ecfeff);
+  background: linear-gradient(135deg, #fff1df, #fef3c7);
 }
 
 .project-grid .project-card:nth-child(2n) .project-status,
 .project-info .project-status {
-  border-color: rgba(124, 58, 237, 0.18);
-  color: #6d28d9;
-  background: #f5f3ff;
+  border-color: rgba(245, 158, 66, 0.24);
+  color: #9a3412;
+  background: #ffedd5;
 }
 
 .project-grid .project-card:nth-child(3n) .project-status {
-  border-color: rgba(5, 150, 105, 0.18);
-  color: #047857;
-  background: #ecfdf5;
+  border-color: rgba(229, 183, 59, 0.3);
+  color: #854d0e;
+  background: #fef3c7;
 }
 
 .project-counts,
@@ -2231,7 +2234,7 @@ a {
 .project-form textarea,
 .project-form select {
   border-color: var(--color-border);
-  background: rgba(248, 251, 255, 0.92);
+  background: rgba(255, 251, 235, 0.9);
 }
 
 .project-search-field:focus-within,
@@ -2242,13 +2245,13 @@ a {
 .project-form input:focus,
 .project-form textarea:focus,
 .project-form select:focus {
-  border-color: rgba(79, 70, 229, 0.52);
-  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+  border-color: rgba(234, 88, 12, 0.48);
+  box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.14);
 }
 
 .progress-track,
 .checklist-page-progress-track {
-  background: #e0e7ff;
+  background: #fdebd3;
 }
 
 .progress-track span,
@@ -2259,12 +2262,12 @@ a {
 .project-tabs {
   border-color: var(--color-border);
   background: rgba(255, 255, 255, 0.66);
-  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.08);
+  box-shadow: 0 10px 24px rgba(180, 83, 9, 0.08);
 }
 
 .project-tab:hover {
   color: var(--color-primary-deep);
-  background: rgba(79, 70, 229, 0.08);
+  background: rgba(251, 146, 60, 0.12);
 }
 
 .project-tab.active {
@@ -2275,88 +2278,88 @@ a {
 .resource-preview,
 .youtube-thumbnail,
 .broll-preview-image {
-  border-color: rgba(79, 70, 229, 0.14);
-  background-color: #eaf2ff;
+  border-color: rgba(234, 88, 12, 0.16);
+  background-color: #fff1df;
 }
 
 .video-preview {
   background:
-    linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(8, 145, 178, 0.14)),
-    #eef4ff;
+    linear-gradient(135deg, rgba(244, 114, 82, 0.18), rgba(245, 158, 66, 0.14)),
+    #fff1df;
 }
 
 .broll-preview {
   background:
-    linear-gradient(45deg, rgba(8, 145, 178, 0.14) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(79, 70, 229, 0.12) 25%, transparent 25%),
-    #f0fdfa;
+    linear-gradient(45deg, rgba(245, 158, 66, 0.16) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(244, 114, 82, 0.12) 25%, transparent 25%),
+    #fff7ed;
 }
 
 .thumbnail-preview.variant-2 {
   background:
-    linear-gradient(90deg, rgba(79, 70, 229, 0.16) 38%, transparent 38%),
-    linear-gradient(#f8fbff 68%, #dbeafe 68%);
+    linear-gradient(90deg, rgba(244, 114, 82, 0.16) 38%, transparent 38%),
+    linear-gradient(#fffaf0 68%, #fed7aa 68%);
 }
 
 .reference-search-input button {
-  background: linear-gradient(135deg, #ef4444, var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-cyan));
 }
 
 .reference-search-input button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #dc2626, var(--color-primary-deep));
+  background: linear-gradient(135deg, var(--color-primary-deep), #d97706);
 }
 
 .filter-options button,
 .broll-type-toggle button,
 .broll-categories button {
-  border-color: rgba(79, 70, 229, 0.18);
+  border-color: rgba(217, 119, 6, 0.2);
   color: var(--color-muted);
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 253, 247, 0.82);
 }
 
 .filter-options button:hover:not(:disabled),
 .broll-type-toggle button:hover:not(:disabled),
 .broll-categories button:hover:not(:disabled) {
-  border-color: rgba(79, 70, 229, 0.34);
+  border-color: rgba(217, 119, 6, 0.36);
   color: var(--color-primary-deep);
-  background: rgba(79, 70, 229, 0.08);
+  background: rgba(255, 237, 213, 0.76);
 }
 
 .filter-options button.active {
   border-color: transparent;
   color: #fff;
-  background: linear-gradient(135deg, #ef4444, var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-cyan));
 }
 
 .broll-search-input button,
 .save-broll-button {
   border: 0;
   color: #fff;
-  background: linear-gradient(135deg, var(--color-cyan), var(--color-emerald));
-  box-shadow: 0 10px 22px rgba(8, 145, 178, 0.22);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-cyan));
+  box-shadow: 0 10px 22px rgba(234, 88, 12, 0.22);
 }
 
 .broll-search-input button:hover:not(:disabled),
 .save-broll-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #0e7490, #047857);
+  background: linear-gradient(135deg, var(--color-primary-deep), #d97706);
 }
 
 .broll-type-toggle button.active,
 .broll-categories button[aria-pressed="true"] {
   border-color: transparent;
   color: #fff;
-  background: linear-gradient(135deg, var(--color-cyan), var(--color-emerald));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-cyan));
 }
 
 .save-reference-button {
   border: 0;
   color: #fff;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-violet));
-  box-shadow: 0 10px 22px rgba(79, 70, 229, 0.2);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-cyan));
+  box-shadow: 0 10px 22px rgba(234, 88, 12, 0.2);
 }
 
 .save-reference-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--color-primary-deep), #6d28d9);
+  background: linear-gradient(135deg, var(--color-primary-deep), #d97706);
 }
 
 .reference-search-input button:disabled,
@@ -2364,24 +2367,24 @@ a {
 .save-reference-button:disabled,
 .save-broll-button:disabled,
 .checklist-add-form button:disabled {
-  border-color: #dbe3f3;
-  color: #94a3b8;
-  background: #e8eef8;
+  border-color: #f3d8bf;
+  color: #b19484;
+  background: #f8ead9;
   box-shadow: none;
 }
 
 .youtube-thumbnail > span {
   border-color: rgba(255, 255, 255, 0.78);
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.82), rgba(79, 70, 229, 0.78));
+  background: linear-gradient(135deg, rgba(228, 111, 93, 0.86), rgba(245, 158, 66, 0.78));
 }
 
 .broll-preview-image span {
-  background: linear-gradient(135deg, rgba(8, 145, 178, 0.88), rgba(5, 150, 105, 0.82));
+  background: linear-gradient(135deg, rgba(228, 111, 93, 0.84), rgba(229, 183, 59, 0.82));
 }
 
 .checklist-progress-card {
   background:
-    linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(8, 145, 178, 0.08)),
+    linear-gradient(135deg, rgba(244, 114, 82, 0.08), rgba(245, 158, 66, 0.1)),
     var(--color-surface);
 }
 
@@ -2390,7 +2393,7 @@ a {
 }
 
 .checklist-page-item:hover {
-  background: rgba(79, 70, 229, 0.045);
+  background: rgba(251, 146, 60, 0.08);
 }
 
 .checklist-page-item input,
@@ -2399,35 +2402,35 @@ a {
 }
 
 .checklist-page-item.done {
-  background: rgba(5, 150, 105, 0.045);
+  background: rgba(254, 243, 199, 0.34);
 }
 
 .checklist-page-item.done .checklist-item-index {
-  color: var(--color-emerald);
+  color: #b45309;
 }
 
 .checklist-page-item.done .checklist-item-text,
 .detail-checklist .done label {
-  color: #7c8aa5;
+  color: #9b8577;
 }
 
 .checklist-list-actions > button {
-  color: var(--color-cyan);
-  background: #ecfeff;
+  color: #9a3412;
+  background: #fff7df;
 }
 
 .projects-empty,
 .checklist-no-project,
 .project-not-found section,
 .not-found-page section {
-  border-color: rgba(79, 70, 229, 0.24);
+  border-color: rgba(217, 119, 6, 0.24);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(238, 242, 255, 0.82));
+    linear-gradient(135deg, rgba(255, 253, 247, 0.94), rgba(255, 237, 213, 0.74));
   box-shadow: var(--shadow-card);
 }
 
 .form-overlay {
-  background: rgba(15, 23, 42, 0.44);
+  background: rgba(67, 36, 20, 0.42);
 }
 
 .primary-button:focus-visible,
@@ -2450,7 +2453,7 @@ a {
 .checklist-list-actions > button:focus-visible,
 .checklist-page-item > button:focus-visible,
 .checklist-add-form button:focus-visible {
-  outline: 3px solid #9f9f9f;
+  outline: 3px solid rgba(245, 158, 66, 0.58);
   outline-offset: 3px;
 }
 
