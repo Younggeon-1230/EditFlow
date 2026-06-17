@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 
+const dashboardSummaryUrl = `${import.meta.env.BASE_URL}data/dashboard-summary.json`
+
 function useDashboardSummary() {
   const [stats, setStats] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -13,7 +15,7 @@ function useDashboardSummary() {
         setIsLoading(true)
         setError(null)
 
-        const response = await fetch('/data/dashboard-summary.json', {
+        const response = await fetch(dashboardSummaryUrl, {
           signal: controller.signal,
         })
 
