@@ -93,13 +93,14 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: min(980px, calc(100% - 40px));
+  width: min(1040px, calc(100% - 40px));
   margin: 0 auto;
   padding: 112px 0 96px;
 }
 
 .hero-section {
-  max-width: 720px;
+  width: 100%;
+  max-width: 940px;
   text-align: center;
 }
 
@@ -114,9 +115,10 @@ a {
 .hero-section h1 {
   margin: 0;
   color: #202020;
-  font-size: clamp(2.25rem, 5vw, 4rem);
-  line-height: 1.16;
-  letter-spacing: -0.055em;
+  font-size: 3.45rem;
+  line-height: 1.12;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .hero-description {
@@ -1993,6 +1995,21 @@ a {
     padding-top: 76px;
   }
 
+  .hero-section h1 {
+    font-size: 2.3rem;
+    line-height: 1.18;
+    text-wrap: balance;
+    white-space: normal;
+  }
+
+  .hero-description {
+    max-width: 320px;
+    margin-right: auto;
+    margin-left: auto;
+    font-size: 0.98rem;
+    text-wrap: pretty;
+  }
+
   .dashboard-stats {
     grid-template-columns: 1fr;
     margin-top: 64px;
@@ -2083,7 +2100,7 @@ a {
   }
 
   .hero-section h1 {
-    font-size: 2.2rem;
+    font-size: 1.85rem;
   }
 
   .project-card {
