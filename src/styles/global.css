@@ -2,7 +2,20 @@
   font-family:
     Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #202124;
-  background: #f7f7f7;
+  background: #f4f7ff;
+  --color-ink: #172033;
+  --color-muted: #69738a;
+  --color-soft: #eef4ff;
+  --color-surface: rgba(255, 255, 255, 0.9);
+  --color-border: #d9e2f4;
+  --color-primary: #4f46e5;
+  --color-primary-deep: #3730a3;
+  --color-cyan: #0891b2;
+  --color-emerald: #059669;
+  --color-violet: #7c3aed;
+  --color-danger: #dc2626;
+  --shadow-soft: 0 16px 42px rgba(55, 48, 163, 0.1);
+  --shadow-card: 0 10px 28px rgba(31, 41, 55, 0.08);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -16,10 +29,12 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    linear-gradient(#ececec 1px, transparent 1px),
-    linear-gradient(90deg, #ececec 1px, transparent 1px),
-    #f7f7f7;
-  background-size: 32px 32px;
+    radial-gradient(circle at 12% 4%, rgba(79, 70, 229, 0.14), transparent 28%),
+    radial-gradient(circle at 82% 10%, rgba(8, 145, 178, 0.14), transparent 24%),
+    linear-gradient(rgba(191, 219, 254, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(191, 219, 254, 0.36) 1px, transparent 1px),
+    linear-gradient(180deg, #f7fbff 0%, #f3f5ff 46%, #f8fbff 100%);
+  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px, 100% 100%;
 }
 
 button,
@@ -39,9 +54,10 @@ a {
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid #dedede;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.08);
+  backdrop-filter: blur(16px);
 }
 
 .header-inner {
@@ -54,7 +70,7 @@ a {
 }
 
 .logo {
-  color: #222;
+  color: var(--color-ink);
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -70,7 +86,7 @@ a {
 .navigation-link {
   padding: 10px 14px;
   border-radius: 8px;
-  color: #686868;
+  color: #5f6c83;
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
@@ -80,13 +96,14 @@ a {
 }
 
 .navigation-link:hover {
-  color: #222;
-  background: #f2f2f2;
+  color: var(--color-primary-deep);
+  background: rgba(79, 70, 229, 0.08);
 }
 
 .navigation-link.active {
-  color: #222;
-  background: #ededed;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-cyan));
+  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.22);
 }
 
 .dashboard-page {
@@ -1949,6 +1966,470 @@ a {
   font-size: 0.86rem;
 }
 
+/* Presentation visual refresh */
+.page-eyebrow,
+.hero-eyebrow,
+.resource-type {
+  color: var(--color-primary);
+}
+
+.hero-section {
+  position: relative;
+  padding: 36px 26px 10px;
+}
+
+.hero-section::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0 7% auto;
+  height: 220px;
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    rgba(79, 70, 229, 0.15),
+    rgba(8, 145, 178, 0.12)
+  );
+  content: "";
+  filter: blur(34px);
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 13px;
+  border: 1px solid rgba(79, 70, 229, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 8px 22px rgba(79, 70, 229, 0.08);
+}
+
+.hero-section h1,
+.projects-heading h1,
+.reference-heading h1,
+.broll-heading h1,
+.checklist-heading h1,
+.project-info h1,
+.project-not-found h1,
+.not-found-page h1 {
+  color: var(--color-ink);
+}
+
+.hero-section h1 {
+  background: linear-gradient(135deg, #111827 22%, var(--color-primary) 58%, var(--color-cyan));
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-description,
+.projects-heading p:not(.page-eyebrow),
+.reference-heading > p:not(.page-eyebrow),
+.broll-heading > p:not(.page-eyebrow),
+.checklist-heading > p:not(.page-eyebrow),
+.project-info-main > p,
+.project-card-copy p {
+  color: var(--color-muted);
+}
+
+.primary-button,
+.card-detail-button,
+.form-submit-button,
+.reference-search-input button,
+.checklist-add-form button {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-cyan));
+  box-shadow: 0 12px 26px rgba(79, 70, 229, 0.25);
+}
+
+.primary-button:hover,
+.card-detail-button:hover,
+.form-submit-button:hover,
+.reference-search-input button:hover:not(:disabled),
+.checklist-add-form button:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-primary-deep), #0e7490);
+  box-shadow: 0 16px 34px rgba(79, 70, 229, 0.3);
+}
+
+.secondary-button,
+.card-action-button,
+.icon-button,
+.checklist-list-actions > button {
+  border-color: rgba(79, 70, 229, 0.18);
+  color: var(--color-primary-deep);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.secondary-button:hover,
+.card-action-button:hover,
+.icon-button:hover,
+.checklist-list-actions > button:hover {
+  border-color: rgba(79, 70, 229, 0.38);
+  color: var(--color-primary);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.card-action-button.delete,
+.checklist-page-item > button {
+  color: #8b5cf6;
+}
+
+.card-action-button.delete:hover,
+.checklist-page-item > button:hover {
+  border-color: rgba(220, 38, 38, 0.2);
+  color: var(--color-danger);
+  background: rgba(254, 242, 242, 0.88);
+}
+
+.summary-card,
+.project-card,
+.project-info,
+.detail-resource-card,
+.thumbnail-card,
+.checklist-panel,
+.memo-panel,
+.reference-search-panel,
+.reference-result-card,
+.broll-search-panel,
+.broll-result-card,
+.checklist-project-selector,
+.checklist-progress-card,
+.checklist-list-card,
+.checklist-add-form,
+.project-form-dialog {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.summary-card,
+.project-card,
+.reference-result-card,
+.broll-result-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.summary-card::before,
+.project-card::before,
+.reference-result-card::before,
+.broll-result-card::before {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+}
+
+.summary-card::before {
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--color-primary), var(--color-cyan));
+}
+
+.summary-card:nth-child(2)::before {
+  background: linear-gradient(180deg, var(--color-violet), var(--color-primary));
+}
+
+.summary-card:nth-child(3)::before {
+  background: linear-gradient(180deg, var(--color-emerald), var(--color-cyan));
+}
+
+.project-card::before,
+.reference-result-card::before,
+.broll-result-card::before {
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-cyan));
+}
+
+.project-card:nth-child(2n)::before,
+.reference-result-card:nth-child(2n)::before {
+  background: linear-gradient(90deg, var(--color-violet), var(--color-primary));
+}
+
+.broll-result-card::before {
+  background: linear-gradient(90deg, var(--color-cyan), var(--color-emerald));
+}
+
+.summary-card:hover,
+.project-card:hover,
+.reference-result-card:hover,
+.broll-result-card:hover {
+  border-color: rgba(79, 70, 229, 0.32);
+  box-shadow: var(--shadow-soft);
+}
+
+.summary-card-icon {
+  border-color: rgba(79, 70, 229, 0.18);
+  color: var(--color-primary-deep);
+  background: linear-gradient(135deg, #eef2ff, #ecfeff);
+}
+
+.summary-card:nth-child(2) .summary-card-icon {
+  color: #6d28d9;
+  background: linear-gradient(135deg, #f5f3ff, #eef2ff);
+}
+
+.summary-card:nth-child(3) .summary-card-icon {
+  color: #047857;
+  background: linear-gradient(135deg, #ecfdf5, #ecfeff);
+}
+
+.summary-card-title,
+.project-deadline,
+.youtube-channel,
+.broll-creator,
+.reference-results-heading > span,
+.broll-results-heading > span,
+.checklist-list-actions > span {
+  color: var(--color-muted);
+}
+
+.summary-card-value,
+.project-card-copy h2,
+.reference-results-heading h2,
+.broll-results-heading h2,
+.youtube-result-copy h3,
+.broll-result-body h3,
+.checklist-progress-copy h2,
+.checklist-list-heading h2,
+.panel-heading h2 {
+  color: var(--color-ink);
+}
+
+.summary-card-arrow {
+  color: var(--color-primary);
+}
+
+.project-status {
+  border: 1px solid rgba(79, 70, 229, 0.18);
+  color: var(--color-primary-deep);
+  background: linear-gradient(135deg, #eef2ff, #ecfeff);
+}
+
+.project-grid .project-card:nth-child(2n) .project-status,
+.project-info .project-status {
+  border-color: rgba(124, 58, 237, 0.18);
+  color: #6d28d9;
+  background: #f5f3ff;
+}
+
+.project-grid .project-card:nth-child(3n) .project-status {
+  border-color: rgba(5, 150, 105, 0.18);
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.project-counts,
+.project-search-field,
+.reference-search-input,
+.broll-search-input,
+.checklist-project-selector select,
+.checklist-add-form input,
+.project-form input,
+.project-form textarea,
+.project-form select {
+  border-color: var(--color-border);
+  background: rgba(248, 251, 255, 0.92);
+}
+
+.project-search-field:focus-within,
+.reference-search-input:focus-within,
+.broll-search-input:focus-within,
+.checklist-project-selector select:focus,
+.checklist-add-form input:focus,
+.project-form input:focus,
+.project-form textarea:focus,
+.project-form select:focus {
+  border-color: rgba(79, 70, 229, 0.52);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+}
+
+.progress-track,
+.checklist-page-progress-track {
+  background: #e0e7ff;
+}
+
+.progress-track span,
+.checklist-page-progress-track span {
+  background: linear-gradient(90deg, var(--color-primary), var(--color-cyan));
+}
+
+.project-tabs {
+  border-color: var(--color-border);
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.08);
+}
+
+.project-tab:hover {
+  color: var(--color-primary-deep);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.project-tab.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-cyan));
+}
+
+.resource-preview,
+.youtube-thumbnail,
+.broll-preview-image {
+  border-color: rgba(79, 70, 229, 0.14);
+  background-color: #eaf2ff;
+}
+
+.video-preview {
+  background:
+    linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(8, 145, 178, 0.14)),
+    #eef4ff;
+}
+
+.broll-preview {
+  background:
+    linear-gradient(45deg, rgba(8, 145, 178, 0.14) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(79, 70, 229, 0.12) 25%, transparent 25%),
+    #f0fdfa;
+}
+
+.thumbnail-preview.variant-2 {
+  background:
+    linear-gradient(90deg, rgba(79, 70, 229, 0.16) 38%, transparent 38%),
+    linear-gradient(#f8fbff 68%, #dbeafe 68%);
+}
+
+.reference-search-input button {
+  background: linear-gradient(135deg, #ef4444, var(--color-primary));
+}
+
+.reference-search-input button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626, var(--color-primary-deep));
+}
+
+.filter-options button,
+.broll-type-toggle button,
+.broll-categories button {
+  border-color: rgba(79, 70, 229, 0.18);
+  color: var(--color-muted);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.filter-options button:hover:not(:disabled),
+.broll-type-toggle button:hover:not(:disabled),
+.broll-categories button:hover:not(:disabled) {
+  border-color: rgba(79, 70, 229, 0.34);
+  color: var(--color-primary-deep);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.filter-options button.active {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg, #ef4444, var(--color-primary));
+}
+
+.broll-search-input button,
+.save-broll-button {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-cyan), var(--color-emerald));
+  box-shadow: 0 10px 22px rgba(8, 145, 178, 0.22);
+}
+
+.broll-search-input button:hover:not(:disabled),
+.save-broll-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0e7490, #047857);
+}
+
+.broll-type-toggle button.active,
+.broll-categories button[aria-pressed="true"] {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-cyan), var(--color-emerald));
+}
+
+.save-reference-button {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-violet));
+  box-shadow: 0 10px 22px rgba(79, 70, 229, 0.2);
+}
+
+.save-reference-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-primary-deep), #6d28d9);
+}
+
+.reference-search-input button:disabled,
+.broll-search-input button:disabled,
+.save-reference-button:disabled,
+.save-broll-button:disabled,
+.checklist-add-form button:disabled {
+  border-color: #dbe3f3;
+  color: #94a3b8;
+  background: #e8eef8;
+  box-shadow: none;
+}
+
+.youtube-thumbnail > span {
+  border-color: rgba(255, 255, 255, 0.78);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.82), rgba(79, 70, 229, 0.78));
+}
+
+.broll-preview-image span {
+  background: linear-gradient(135deg, rgba(8, 145, 178, 0.88), rgba(5, 150, 105, 0.82));
+}
+
+.checklist-progress-card {
+  background:
+    linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(8, 145, 178, 0.08)),
+    var(--color-surface);
+}
+
+.checklist-progress-copy > strong {
+  color: var(--color-primary);
+}
+
+.checklist-page-item:hover {
+  background: rgba(79, 70, 229, 0.045);
+}
+
+.checklist-page-item input,
+.detail-checklist input {
+  accent-color: var(--color-primary);
+}
+
+.checklist-page-item.done {
+  background: rgba(5, 150, 105, 0.045);
+}
+
+.checklist-page-item.done .checklist-item-index {
+  color: var(--color-emerald);
+}
+
+.checklist-page-item.done .checklist-item-text,
+.detail-checklist .done label {
+  color: #7c8aa5;
+}
+
+.checklist-list-actions > button {
+  color: var(--color-cyan);
+  background: #ecfeff;
+}
+
+.projects-empty,
+.checklist-no-project,
+.project-not-found section,
+.not-found-page section {
+  border-color: rgba(79, 70, 229, 0.24);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(238, 242, 255, 0.82));
+  box-shadow: var(--shadow-card);
+}
+
+.form-overlay {
+  background: rgba(15, 23, 42, 0.44);
+}
+
 .primary-button:focus-visible,
 .card-detail-button:focus-visible,
 .card-action-button:focus-visible,
@@ -2047,6 +2528,35 @@ a {
     gap: 17px;
   }
 
+  .reference-search-input,
+  .broll-search-input {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 9px 10px 9px 14px;
+  }
+
+  .reference-search-input button,
+  .broll-search-input button {
+    grid-column: 1 / -1;
+    min-height: 42px;
+    margin: 8px 0 0;
+  }
+
+  .checklist-progress-copy {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .checklist-list-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .checklist-list-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
   .broll-result-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2072,6 +2582,17 @@ a {
 
   .project-grid {
     grid-template-columns: 1fr;
+  }
+
+  .project-card-topline,
+  .project-card-actions {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .card-detail-button {
+    width: 100%;
+    margin-right: 0;
   }
 
   .thumbnail-grid {
