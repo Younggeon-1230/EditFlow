@@ -1725,6 +1725,17 @@ a {
   background: #fff;
 }
 
+.checklist-list-card,
+.checklist-add-form {
+  font-family: var(--font-sans);
+}
+
+.checklist-list-card *,
+.checklist-add-form *,
+.checklist-add-form *::placeholder {
+  font-family: inherit;
+}
+
 .checklist-progress-card {
   padding: 26px 28px;
 }
@@ -1787,6 +1798,7 @@ a {
 .checklist-list-actions > span {
   color: #888;
   font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .checklist-list-actions > button {
@@ -1796,6 +1808,7 @@ a {
   border-radius: 8px;
   color: #666;
   background: #fff;
+  font: inherit;
   font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
@@ -1854,11 +1867,15 @@ a {
   color: #aaa;
   font-size: 0.7rem;
   font-weight: 800;
+  line-height: 1;
 }
 
 .checklist-item-text {
   color: #4e4e4e;
+  font-size: 0.97rem;
+  font-weight: 600;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .checklist-page-item.done .checklist-item-text {
@@ -1874,9 +1891,11 @@ a {
   border-radius: 7px;
   color: #999;
   background: transparent;
+  font: inherit;
   font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .checklist-page-item > button:hover {
@@ -1927,6 +1946,9 @@ a {
   outline: 0;
   color: #333;
   background: #fafafa;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .checklist-add-form input:focus {
@@ -1941,6 +1963,7 @@ a {
   border-radius: 9px;
   color: #fff;
   background: #292929;
+  font: inherit;
   font-weight: 700;
   cursor: pointer;
 }
