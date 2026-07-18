@@ -4,3 +4,14 @@ dist
 .env.*
 !.env.example
 npm-debug.log*
+
+# Backend runtime files
+*.db
+*.sqlite
+*.sqlite3
+
+# Python environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
