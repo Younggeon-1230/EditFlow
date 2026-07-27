@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -21,7 +22,14 @@ async def lifespan(app: FastAPI):
         ensure_development_user(session)
     finally:
         session_generator.close()
-    yield
+    timeout = httpx.Timeout(settings.external_api_timeout_seconds)
+    async with httpx.AsyncClient(
+        timeout=timeout,
+        follow_redirects=False,
+        trust_env=False,
+    ) as external_http_client:
+        app.state.external_http_client = external_http_client
+        yield
 
 
 app = FastAPI(

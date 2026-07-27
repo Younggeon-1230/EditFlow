@@ -1,8 +1,10 @@
 from typing import Annotated
 
-from fastapi import Depends
+import httpx
+from fastapi import Depends, Request
 from sqlmodel import Session
 
+from app.core.config import Settings, get_settings
 from app.core.database import get_session
 from app.models.user import User
 from app.services.users import ensure_development_user
@@ -16,3 +18,14 @@ def get_development_user(session: SessionDependency) -> User:
 
 
 DevelopmentUserDependency = Annotated[User, Depends(get_development_user)]
+
+
+def get_external_http_client(request: Request) -> httpx.AsyncClient:
+    return request.app.state.external_http_client
+
+
+ExternalHttpClientDependency = Annotated[
+    httpx.AsyncClient,
+    Depends(get_external_http_client),
+]
+SettingsDependency = Annotated[Settings, Depends(get_settings)]
