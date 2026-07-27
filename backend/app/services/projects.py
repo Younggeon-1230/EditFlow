@@ -1,6 +1,10 @@
+from sqlalchemy import delete
 from sqlmodel import Session, select
 
+from app.models.checklist_item import ChecklistItem
 from app.models.project import Project
+from app.models.saved_broll import SavedBroll
+from app.models.saved_reference import SavedReference
 from app.models.user import utc_now
 from app.schemas.project import ProjectCreate, ProjectUpdate
 
@@ -47,5 +51,10 @@ def update_project(
 
 
 def delete_project(session: Session, project: Project) -> None:
+    assert project.id is not None
+    for child_model in (ChecklistItem, SavedReference, SavedBroll):
+        session.exec(
+            delete(child_model).where(child_model.project_id == project.id)
+        )
     session.delete(project)
     session.commit()

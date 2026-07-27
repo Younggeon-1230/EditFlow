@@ -6,7 +6,16 @@ autogenerate process registers them with ``SQLModel.metadata``.
 
 from app.models.checklist_item import ChecklistItem
 from app.models.project import Project, ProjectStatus
+from app.models.saved_broll import SavedBroll
+from app.models.saved_reference import SavedReference
 from app.models.user import User
 
 
-__all__ = ["ChecklistItem", "Project", "ProjectStatus", "User"]
+__all__ = [
+    "ChecklistItem",
+    "Project",
+    "ProjectStatus",
+    "SavedBroll",
+    "SavedReference",
+    "User",
+]

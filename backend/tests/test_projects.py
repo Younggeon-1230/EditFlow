@@ -5,7 +5,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 
+from app.models.checklist_item import ChecklistItem
 from app.models.project import Project
+from app.models.saved_broll import SavedBroll
+from app.models.saved_reference import SavedReference
 from app.models.user import User
 from app.services.users import DEVELOPMENT_USER_EMAIL
 
@@ -115,6 +118,44 @@ def test_delete_project_returns_204(client: TestClient) -> None:
     assert response.status_code == 204
     assert response.content == b""
     assert client.get(f"/api/projects/{created['id']}").status_code == 404
+
+
+def test_delete_project_removes_its_child_data(
+    client: TestClient,
+    test_engine: Engine,
+) -> None:
+    created = create_project(client)
+    project_id = created["id"]
+    checklist_response = client.post(
+        f"/api/projects/{project_id}/checklist-items",
+        json={"title": "Child checklist item"},
+    )
+    reference_response = client.post(
+        f"/api/projects/{project_id}/references",
+        json={
+            "external_id": "child-reference",
+            "title": "Child reference",
+            "url": "https://www.youtube.com/watch?v=child-reference",
+        },
+    )
+    broll_response = client.post(
+        f"/api/projects/{project_id}/brolls",
+        json={
+            "external_id": "child-broll",
+            "url": "https://www.pexels.com/video/child-broll/",
+        },
+    )
+    assert checklist_response.status_code == 201
+    assert reference_response.status_code == 201
+    assert broll_response.status_code == 201
+
+    response = client.delete(f"/api/projects/{project_id}")
+
+    assert response.status_code == 204
+    with Session(test_engine) as session:
+        assert session.get(ChecklistItem, checklist_response.json()["id"]) is None
+        assert session.get(SavedReference, reference_response.json()["id"]) is None
+        assert session.get(SavedBroll, broll_response.json()["id"]) is None
 
 
 def test_read_missing_project_returns_404(client: TestClient) -> None:
