@@ -30,7 +30,7 @@ OwnedProjectDependency = Annotated[Project, Depends(get_owned_project_or_404)]
 def read_projects(
     session: SessionDependency,
     user: DevelopmentUserDependency,
-) -> list[Project]:
+) -> list[ProjectRead]:
     assert user.id is not None
     return project_service.list_projects(session, user.id)
 
@@ -40,25 +40,47 @@ def create_project(
     project_create: ProjectCreate,
     session: SessionDependency,
     user: DevelopmentUserDependency,
-) -> Project:
+) -> ProjectRead:
     assert user.id is not None
-    return project_service.create_project(session, user.id, project_create)
+    project = project_service.create_project(session, user.id, project_create)
+    assert project.id is not None
+    summary = project_service.get_project_summary(session, user.id, project.id)
+    assert summary is not None
+    return summary
 
 
 @router.get("/{project_id}", response_model=ProjectRead)
-def read_project(project: OwnedProjectDependency) -> Project:
-    return project
+def read_project(
+    session: SessionDependency,
+    user: DevelopmentUserDependency,
+    project: OwnedProjectDependency,
+) -> ProjectRead:
+    assert user.id is not None
+    assert project.id is not None
+    summary = project_service.get_project_summary(session, user.id, project.id)
+    assert summary is not None
+    return summary
 
 
 @router.patch("/{project_id}", response_model=ProjectRead)
 def update_project(
     project_update: ProjectUpdate,
     session: SessionDependency,
+    user: DevelopmentUserDependency,
     project: OwnedProjectDependency,
-) -> Project:
+) -> ProjectRead:
     if not project_update.model_fields_set:
         raise HTTPException(status_code=400, detail="Request body must not be empty")
-    return project_service.update_project(session, project, project_update)
+    assert user.id is not None
+    updated_project = project_service.update_project(
+        session, project, project_update
+    )
+    assert updated_project.id is not None
+    summary = project_service.get_project_summary(
+        session, user.id, updated_project.id
+    )
+    assert summary is not None
+    return summary
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)

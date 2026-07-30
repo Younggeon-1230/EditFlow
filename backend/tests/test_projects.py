@@ -58,6 +58,86 @@ def test_create_project_assigns_development_user(client: TestClient) -> None:
     assert project["due_date"] == "2026-08-01"
     assert project["created_at"]
     assert project["updated_at"]
+    assert project["reference_count"] == 0
+    assert project["broll_count"] == 0
+    assert project["checklist_total"] == 0
+    assert project["checklist_completed"] == 0
+
+
+def test_project_responses_include_scoped_child_counts(
+    client: TestClient,
+) -> None:
+    first = create_project(client, "Counted")
+    second = create_project(client, "Separate")
+    first_id = first["id"]
+    second_id = second["id"]
+
+    for index in range(2):
+        reference_response = client.post(
+            f"/api/projects/{first_id}/references",
+            json={
+                "external_id": f"reference-{index}",
+                "title": f"Reference {index}",
+                "url": f"https://www.youtube.com/watch?v=reference-{index}",
+            },
+        )
+        broll_response = client.post(
+            f"/api/projects/{first_id}/brolls",
+            json={
+                "external_id": f"broll-{index}",
+                "url": f"https://www.pexels.com/video/broll-{index}/",
+            },
+        )
+        checklist_response = client.post(
+            f"/api/projects/{first_id}/checklist-items",
+            json={"title": f"Checklist {index}"},
+        )
+        assert reference_response.status_code == 201
+        assert broll_response.status_code == 201
+        assert checklist_response.status_code == 201
+        if index == 0:
+            completed_response = client.patch(
+                f"/api/checklist-items/{checklist_response.json()['id']}",
+                json={"is_completed": True},
+            )
+            assert completed_response.status_code == 200
+
+    assert client.post(
+        f"/api/projects/{second_id}/references",
+        json={
+            "external_id": "separate-reference",
+            "title": "Separate reference",
+            "url": "https://www.youtube.com/watch?v=separate-reference",
+        },
+    ).status_code == 201
+
+    detail_response = client.get(f"/api/projects/{first_id}")
+    assert detail_response.status_code == 200
+    detail = detail_response.json()
+    assert detail["reference_count"] == 2
+    assert detail["broll_count"] == 2
+    assert detail["checklist_total"] == 2
+    assert detail["checklist_completed"] == 1
+
+    listed = {
+        project["id"]: project for project in client.get("/api/projects").json()
+    }
+    assert listed[first_id] == detail
+    assert listed[second_id]["reference_count"] == 1
+    assert listed[second_id]["broll_count"] == 0
+    assert listed[second_id]["checklist_total"] == 0
+    assert listed[second_id]["checklist_completed"] == 0
+
+    update_response = client.patch(
+        f"/api/projects/{first_id}",
+        json={"title": "Counted after update"},
+    )
+    assert update_response.status_code == 200
+    updated = update_response.json()
+    assert updated["reference_count"] == 2
+    assert updated["broll_count"] == 2
+    assert updated["checklist_total"] == 2
+    assert updated["checklist_completed"] == 1
 
 
 def test_list_projects_returns_only_development_users_projects(

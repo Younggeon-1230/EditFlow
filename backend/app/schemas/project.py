@@ -45,3 +45,7 @@ class ProjectRead(ProjectBase):
     user_id: int
     created_at: datetime
     updated_at: datetime
+    reference_count: int = 0
+    broll_count: int = 0
+    checklist_total: int = 0
+    checklist_completed: int = 0
