@@ -1,6 +1,12 @@
 import ChecklistItem from './ChecklistItem'
 
-function ChecklistPanel({ items, onToggle, onDelete, onReset }) {
+function ChecklistPanel({
+  items,
+  onToggle,
+  onDelete,
+  onReset,
+  disabled = false,
+}) {
   return (
     <section className="checklist-list-card">
       <div className="checklist-list-heading">
@@ -10,7 +16,7 @@ function ChecklistPanel({ items, onToggle, onDelete, onReset }) {
         </div>
         <div className="checklist-list-actions">
           <span>{items.length}개 항목</span>
-          <button onClick={onReset} type="button">
+          <button disabled={disabled} onClick={onReset} type="button">
             기본 체크리스트 복원
           </button>
         </div>
@@ -20,6 +26,7 @@ function ChecklistPanel({ items, onToggle, onDelete, onReset }) {
         <ol className="checklist-page-list">
           {items.map((item, index) => (
             <ChecklistItem
+              disabled={disabled}
               index={index}
               item={item}
               key={item.id}

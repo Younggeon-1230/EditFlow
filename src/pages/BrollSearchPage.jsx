@@ -3,10 +3,22 @@ import BrollCategoryBar from '../components/broll/BrollCategoryBar'
 import BrollResultList from '../components/broll/BrollResultList'
 import BrollSearchBar from '../components/broll/BrollSearchBar'
 import BrollTypeToggle from '../components/broll/BrollTypeToggle'
+import ProjectSelector from '../components/checklist/ProjectSelector'
 import usePexelsSearch from '../hooks/usePexelsSearch'
+import useProjectSelection from '../hooks/useProjectSelection'
+import useSavedBrolls from '../hooks/useSavedBrolls'
 
 function BrollSearchPage() {
   const [searchInput, setSearchInput] = useState('')
+  const {
+    projects,
+    selectedProject,
+    selectedProjectId,
+    setSelectedProjectId,
+  } = useProjectSelection()
+  const savedBrolls = useSavedBrolls(
+    selectedProject?.backendProjectId ?? null,
+  )
   const {
     query,
     type,
@@ -33,6 +45,12 @@ function BrollSearchPage() {
         <h1>B-roll 소스 검색</h1>
         <p>Pexels에서 무료 영상과 이미지를 검색하고 프로젝트에 저장하세요.</p>
       </section>
+
+      <ProjectSelector
+        onChange={setSelectedProjectId}
+        projects={projects}
+        selectedProjectId={selectedProjectId}
+      />
 
       <section className="broll-search-panel" aria-label="Pexels 소스 검색">
         <BrollSearchBar
@@ -81,7 +99,18 @@ function BrollSearchPage() {
         )}
 
         {!isLoading && !error && (
-          <BrollResultList hasSearched={Boolean(query)} results={results} />
+          <BrollResultList
+            hasSearched={Boolean(query)}
+            project={selectedProject}
+            results={results}
+            savedBrolls={savedBrolls}
+          />
+        )}
+
+        {savedBrolls.error && (
+          <div className="reference-state error-state" role="alert">
+            <p>{savedBrolls.error}</p>
+          </div>
         )}
       </section>
     </main>

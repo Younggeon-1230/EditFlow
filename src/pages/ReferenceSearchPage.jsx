@@ -1,11 +1,23 @@
 import { useState } from 'react'
+import ProjectSelector from '../components/checklist/ProjectSelector'
 import ReferenceFilterBar from '../components/reference/ReferenceFilterBar'
 import ReferenceResultList from '../components/reference/ReferenceResultList'
 import ReferenceSearchBar from '../components/reference/ReferenceSearchBar'
+import useProjectSelection from '../hooks/useProjectSelection'
+import useSavedReferences from '../hooks/useSavedReferences'
 import useYoutubeSearch from '../hooks/useYoutubeSearch'
 
 function ReferenceSearchPage() {
   const [searchInput, setSearchInput] = useState('')
+  const {
+    projects,
+    selectedProject,
+    selectedProjectId,
+    setSelectedProjectId,
+  } = useProjectSelection()
+  const savedReferences = useSavedReferences(
+    selectedProject?.backendProjectId ?? null,
+  )
   const {
     query,
     order,
@@ -27,6 +39,12 @@ function ReferenceSearchPage() {
         <h1>유튜브 레퍼런스 검색</h1>
         <p>키워드로 참고 영상을 검색하고 프로젝트에 저장하세요.</p>
       </section>
+
+      <ProjectSelector
+        onChange={setSelectedProjectId}
+        projects={projects}
+        selectedProjectId={selectedProjectId}
+      />
 
       <section className="reference-search-panel" aria-label="유튜브 영상 검색">
         <ReferenceSearchBar
@@ -68,7 +86,18 @@ function ReferenceSearchPage() {
         )}
 
         {!isLoading && !error && (
-          <ReferenceResultList hasSearched={Boolean(query)} results={results} />
+          <ReferenceResultList
+            hasSearched={Boolean(query)}
+            project={selectedProject}
+            results={results}
+            savedReferences={savedReferences}
+          />
+        )}
+
+        {savedReferences.error && (
+          <div className="reference-state error-state" role="alert">
+            <p>{savedReferences.error}</p>
+          </div>
         )}
       </section>
     </main>

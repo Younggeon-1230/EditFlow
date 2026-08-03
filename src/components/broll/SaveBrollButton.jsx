@@ -1,5 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { STORAGE_KEYS } from '../../constants/app'
+
+function isBackendProjectId(value) {
+  return Number.isInteger(value) && value > 0
+}
 
 function isAssetSaved(assetId) {
   try {
@@ -14,10 +18,27 @@ function isAssetSaved(assetId) {
   }
 }
 
-function SaveBrollButton({ asset }) {
-  const [isSaved, setIsSaved] = useState(() => isAssetSaved(asset.id))
+function SaveBrollButton({ asset, project, savedBrolls }) {
+  const externalId = asset.externalId ?? asset.id
+  const usesBackend = isBackendProjectId(project?.backendProjectId)
+  const [isSavedLocally, setIsSavedLocally] = useState(() =>
+    isAssetSaved(asset.id),
+  )
 
-  function handleSave() {
+  useEffect(() => {
+    setIsSavedLocally(isAssetSaved(asset.id))
+  }, [asset.id, project?.id])
+
+  async function handleSave() {
+    if (!project) {
+      return
+    }
+
+    if (usesBackend) {
+      await savedBrolls.save(asset)
+      return
+    }
+
     try {
       const storedValue = JSON.parse(
         localStorage.getItem(STORAGE_KEYS.savedBrolls) ?? '[]',
@@ -34,21 +55,38 @@ function SaveBrollButton({ asset }) {
         )
       }
 
-      setIsSaved(true)
-      window.alert('B-roll 소스를 임시 저장했습니다. 프로젝트 연결은 이후 제공됩니다.')
+      setIsSavedLocally(true)
+      window.alert(
+        'B-roll 소스를 브라우저에 임시 저장했습니다. 이 프로젝트는 아직 서버와 동기화되지 않았습니다.',
+      )
     } catch {
       window.alert('브라우저 저장소를 사용할 수 없어 저장하지 못했습니다.')
     }
   }
 
+  const isSaved = usesBackend
+    ? savedBrolls.isSaved(externalId)
+    : isSavedLocally
+  const isSaving = usesBackend && savedBrolls.isSavingItem(externalId)
+  const isChecking = usesBackend && savedBrolls.isLoading
+  const label = !project
+    ? '프로젝트 선택'
+    : isSaved
+      ? '저장됨'
+      : isSaving
+        ? '저장 중'
+        : isChecking
+          ? '저장 확인 중'
+          : '프로젝트에 저장'
+
   return (
     <button
       className="save-broll-button"
-      disabled={isSaved}
+      disabled={!project || isSaved || isSaving || isChecking}
       onClick={handleSave}
       type="button"
     >
-      {isSaved ? '저장됨' : '프로젝트에 저장'}
+      {label}
     </button>
   )
 }

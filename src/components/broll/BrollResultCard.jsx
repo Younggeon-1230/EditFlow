@@ -1,6 +1,6 @@
 import SaveBrollButton from './SaveBrollButton'
 
-function BrollResultCard({ asset }) {
+function BrollResultCard({ asset, project, savedBrolls }) {
   return (
     <article className="broll-result-card">
       <a
@@ -27,7 +27,11 @@ function BrollResultCard({ asset }) {
           >
             원본 보기
           </a>
-          <SaveBrollButton asset={asset} />
+          <SaveBrollButton
+            asset={asset}
+            project={project}
+            savedBrolls={savedBrolls}
+          />
         </div>
       </div>
     </article>

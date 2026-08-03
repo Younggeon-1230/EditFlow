@@ -1,7 +1,9 @@
 import { generatePath, Link } from 'react-router-dom'
 import { ROUTES } from '../../constants/app'
+import { getDday } from '../../utils/projectDates'
 
 function ProjectCard({ project, onEdit, onDelete }) {
+  const dday = getDday(project.deadline)
   const rawChecklistProgress =
     project.checklistTotal > 0
       ? Math.round((project.checklistDone / project.checklistTotal) * 100)
@@ -12,7 +14,12 @@ function ProjectCard({ project, onEdit, onDelete }) {
     <article className="project-card">
       <div className="project-card-topline">
         <span className="project-status">{project.status}</span>
-        <span className="project-deadline">마감일 {project.deadline}</span>
+        <span className="project-deadline">
+          {project.deadline ? `마감일 ${project.deadline}` : '마감일 없음'}
+          {dday && (
+            <span className={`project-dday ${dday.kind}`}> · {dday.label}</span>
+          )}
+        </span>
       </div>
 
       <div className="project-card-copy">

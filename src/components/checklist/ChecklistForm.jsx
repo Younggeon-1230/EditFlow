@@ -1,17 +1,19 @@
 import { useState } from 'react'
 
-function ChecklistForm({ onAdd }) {
+function ChecklistForm({ onAdd, disabled = false }) {
   const [text, setText] = useState('')
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
 
     if (!text.trim()) {
       return
     }
 
-    onAdd(text)
-    setText('')
+    const added = await onAdd(text)
+    if (added) {
+      setText('')
+    }
   }
 
   return (
@@ -20,12 +22,13 @@ function ChecklistForm({ onAdd }) {
       <div>
         <input
           id="new-checklist-item"
+          disabled={disabled}
           onChange={(event) => setText(event.target.value)}
           placeholder="새 작업 항목 입력"
           type="text"
           value={text}
         />
-        <button disabled={!text.trim()} type="submit">
+        <button disabled={disabled || !text.trim()} type="submit">
           <span aria-hidden="true">+</span> 새 항목 추가
         </button>
       </div>

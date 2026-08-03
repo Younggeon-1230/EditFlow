@@ -41,17 +41,6 @@ const projectDetailSamples = {
       author: 'Pexels Creator',
     },
   ],
-  checklist: [
-    { id: 'task-1', text: '기획 확인', done: true },
-    { id: 'task-2', text: '레퍼런스 영상 수집', done: true },
-    { id: 'task-3', text: '썸네일 참고 자료 수집', done: true },
-    { id: 'task-4', text: 'B-roll 소스 수집', done: false },
-    { id: 'task-5', text: '컷 편집', done: false },
-  ],
-  memos: [
-    '밝고 경쾌한 분위기로 편집',
-    '어쿠스틱 기타와 피아노 중심의 음악 참고',
-  ],
 }
 
 export default projectDetailSamples

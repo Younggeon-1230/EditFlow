@@ -1,6 +1,11 @@
 import ReferenceResultCard from './ReferenceResultCard'
 
-function ReferenceResultList({ results, hasSearched }) {
+function ReferenceResultList({
+  results,
+  hasSearched,
+  project,
+  savedReferences,
+}) {
   if (results.length === 0) {
     return (
       <div className="reference-state empty-state">
@@ -21,7 +26,12 @@ function ReferenceResultList({ results, hasSearched }) {
   return (
     <div className="reference-result-list">
       {results.map((video) => (
-        <ReferenceResultCard key={video.id} video={video} />
+        <ReferenceResultCard
+          key={video.id}
+          project={project}
+          savedReferences={savedReferences}
+          video={video}
+        />
       ))}
     </div>
   )

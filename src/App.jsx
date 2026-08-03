@@ -3,6 +3,7 @@ import Header from './components/layout/Header'
 import { ROUTES } from './constants/app'
 import BrollSearchPage from './pages/BrollSearchPage'
 import ChecklistPage from './pages/ChecklistPage'
+import ContentIdeasPage from './pages/ContentIdeasPage'
 import MainDashboardPage from './pages/MainDashboardPage'
 import NotFoundPage from './pages/NotFoundPage'
 import ProjectDetailPage from './pages/ProjectDetailPage'
@@ -20,6 +21,7 @@ function App() {
         <Route path={ROUTES.projects} element={<ProjectListPage />} />
         <Route path={ROUTES.projectDetail} element={<ProjectDetailPage />} />
         <Route path={ROUTES.checklist} element={<ChecklistPage />} />
+        <Route path={ROUTES.ideas} element={<ContentIdeasPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </div>

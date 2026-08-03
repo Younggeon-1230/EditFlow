@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { ROUTES } from '../../constants/app'
 
 const navigationItems = [
+  { label: '콘텐츠 소재', to: ROUTES.ideas },
   { label: '레퍼런스 검색', to: ROUTES.reference },
   { label: 'B-roll 검색', to: ROUTES.broll },
   { label: '프로젝트', to: ROUTES.projects },

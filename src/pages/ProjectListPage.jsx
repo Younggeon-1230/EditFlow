@@ -12,9 +12,13 @@ function ProjectListPage() {
     addProject,
     updateProject,
     deleteProject,
+    syncError,
+    isMigrating,
+    migrateProjects,
   } = useProjects()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
+  const [migrationResult, setMigrationResult] = useState(null)
 
   function openCreateForm() {
     setEditingProject(null)
@@ -51,6 +55,20 @@ function ProjectListPage() {
     }
   }
 
+  async function handleMigration() {
+    const shouldMigrate = window.confirm(
+      '아직 서버와 연결되지 않은 로컬 프로젝트를 동기화하시겠습니까?',
+    )
+    if (!shouldMigrate) {
+      return
+    }
+
+    const result = await migrateProjects()
+    if (result) {
+      setMigrationResult(result)
+    }
+  }
+
   return (
     <main className="projects-page">
       <section className="projects-heading">
@@ -59,12 +77,42 @@ function ProjectListPage() {
           <h1>프로젝트 목록</h1>
           <p>편집 프로젝트를 생성하고 진행 상태를 관리하세요.</p>
         </div>
-        <button className="primary-button projects-create-button" onClick={openCreateForm}>
-          <span aria-hidden="true">+</span> 새 프로젝트 만들기
-        </button>
+        <div className="projects-heading-actions">
+          <button
+            className="secondary-button"
+            disabled={isMigrating}
+            onClick={handleMigration}
+            type="button"
+          >
+            {isMigrating ? '동기화 중' : '프로젝트 서버 동기화'}
+          </button>
+          <button
+            className="primary-button projects-create-button"
+            onClick={openCreateForm}
+          >
+            <span aria-hidden="true">+</span> 새 프로젝트 만들기
+          </button>
+        </div>
       </section>
 
       <ProjectSearchBar value={searchTerm} onChange={setSearchTerm} />
+
+      {syncError && (
+        <section className="reference-state error-state" role="alert">
+          <strong>서버 동기화 상태를 확인해 주세요.</strong>
+          <p>{syncError}</p>
+        </section>
+      )}
+
+      {migrationResult && (
+        <section className="reference-state" role="status">
+          <strong>프로젝트 서버 동기화 결과</strong>
+          <p>
+            성공 {migrationResult.migrated}개 · 건너뜀{' '}
+            {migrationResult.skipped}개 · 실패 {migrationResult.failed}개
+          </p>
+        </section>
+      )}
 
       {filteredProjects.length > 0 ? (
         <section className="project-grid" aria-label="프로젝트 목록">

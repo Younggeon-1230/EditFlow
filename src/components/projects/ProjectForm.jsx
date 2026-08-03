@@ -2,7 +2,12 @@ import { useState } from 'react'
 
 const statusOptions = ['기획 중', '소스 수집 중', '편집 중', '검토 중', '완료']
 
-function ProjectForm({ initialValue, onSubmit, onCancel }) {
+function ProjectForm({
+  initialValue,
+  onSubmit,
+  onCancel,
+  isSubmitting = false,
+}) {
   const [formValues, setFormValues] = useState({
     title: initialValue?.title ?? '',
     description: initialValue?.description ?? '',
@@ -85,11 +90,24 @@ function ProjectForm({ initialValue, onSubmit, onCancel }) {
       </div>
 
       <div className="project-form-actions">
-        <button className="secondary-button" onClick={onCancel} type="button">
+        <button
+          className="secondary-button"
+          disabled={isSubmitting}
+          onClick={onCancel}
+          type="button"
+        >
           취소
         </button>
-        <button className="form-submit-button" type="submit">
-          {initialValue ? '수정 완료' : '프로젝트 만들기'}
+        <button
+          className="form-submit-button"
+          disabled={isSubmitting}
+          type="submit"
+        >
+          {isSubmitting
+            ? '저장 중'
+            : initialValue
+              ? '수정 완료'
+              : '프로젝트 만들기'}
         </button>
       </div>
     </form>

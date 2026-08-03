@@ -1,4 +1,12 @@
-function ChecklistMemoPanel({ checklist = [], memos = [], mode }) {
+function ChecklistMemoPanel({
+  checklist = [],
+  memos = [],
+  mode,
+  isLoading = false,
+  error = null,
+  onToggle,
+  isItemPending = () => false,
+}) {
   if (mode === 'checklist') {
     const completedCount = checklist.filter((item) => item.done).length
 
@@ -13,19 +21,43 @@ function ChecklistMemoPanel({ checklist = [], memos = [], mode }) {
             {completedCount}/{checklist.length} 완료
           </strong>
         </div>
-        <ul className="detail-checklist">
-          {checklist.map((item) => (
-            <li className={item.done ? 'done' : ''} key={item.id}>
-              <input
-                checked={item.done}
-                id={item.id}
-                readOnly
-                type="checkbox"
-              />
-              <label htmlFor={item.id}>{item.text}</label>
-            </li>
-          ))}
-        </ul>
+        {error && (
+          <div className="reference-state error-state" role="alert">
+            <p>{error}</p>
+          </div>
+        )}
+        {isLoading && checklist.length === 0 ? (
+          <div className="reference-state" role="status">
+            <span className="loading-indicator" aria-hidden="true" />
+            <p>체크리스트를 불러오는 중입니다.</p>
+          </div>
+        ) : checklist.length > 0 ? (
+          <ul className="detail-checklist">
+            {checklist.map((item) => {
+              const isPending = isItemPending(item.id)
+
+              return (
+                <li className={item.done ? 'done' : ''} key={item.id}>
+                  <label>
+                    <input
+                      aria-label={`${item.text} 완료 상태`}
+                      checked={item.done}
+                      disabled={isLoading || isPending}
+                      onChange={() => onToggle?.(item.id)}
+                      type="checkbox"
+                    />
+                    <span>{item.text}</span>
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+        ) : (
+          <div className="detail-checklist-empty">
+            <strong>등록된 체크리스트가 없습니다.</strong>
+            <p>체크리스트 페이지에서 작업 항목을 추가할 수 있습니다.</p>
+          </div>
+        )}
       </div>
     )
   }

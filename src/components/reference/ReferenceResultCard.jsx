@@ -2,7 +2,9 @@ import formatDate from '../../utils/formatDate'
 import formatNumber from '../../utils/formatNumber'
 import SaveToProjectButton from './SaveToProjectButton'
 
-function ReferenceResultCard({ video }) {
+function ReferenceResultCard({ video, project, savedReferences }) {
+  const hasValue = (value) => value !== null && value !== undefined
+
   return (
     <article className="reference-result-card">
       <a
@@ -20,18 +22,24 @@ function ReferenceResultCard({ video }) {
         <h3>{video.title}</h3>
         <p className="youtube-channel">{video.channelTitle}</p>
         <dl className="youtube-statistics">
-          <div>
-            <dt>조회수</dt>
-            <dd>{formatNumber(video.viewCount)}</dd>
-          </div>
-          <div>
-            <dt>좋아요</dt>
-            <dd>{formatNumber(video.likeCount)}</dd>
-          </div>
-          <div>
-            <dt>댓글</dt>
-            <dd>{formatNumber(video.commentCount)}</dd>
-          </div>
+          {hasValue(video.viewCount) && (
+            <div>
+              <dt>조회수</dt>
+              <dd>{formatNumber(video.viewCount)}</dd>
+            </div>
+          )}
+          {hasValue(video.likeCount) && (
+            <div>
+              <dt>좋아요</dt>
+              <dd>{formatNumber(video.likeCount)}</dd>
+            </div>
+          )}
+          {hasValue(video.commentCount) && (
+            <div>
+              <dt>댓글</dt>
+              <dd>{formatNumber(video.commentCount)}</dd>
+            </div>
+          )}
           <div>
             <dt>업로드</dt>
             <dd>{formatDate(video.publishedAt)}</dd>
@@ -48,7 +56,11 @@ function ReferenceResultCard({ video }) {
         >
           영상 보기
         </a>
-        <SaveToProjectButton video={video} />
+        <SaveToProjectButton
+          project={project}
+          savedReferences={savedReferences}
+          video={video}
+        />
       </div>
     </article>
   )

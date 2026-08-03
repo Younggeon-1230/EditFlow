@@ -5,6 +5,7 @@ export const ROUTES = {
   projects: '/projects',
   projectDetail: '/projects/:projectId',
   checklist: '/checklist',
+  ideas: '/ideas',
 }
 
 export const STORAGE_KEYS = {
@@ -12,4 +13,5 @@ export const STORAGE_KEYS = {
   checklists: 'editflow_checklists',
   savedReferences: 'editflow_saved_references',
   savedBrolls: 'editflow_saved_brolls',
+  projectMemos: 'editflow_project_memos',
 }

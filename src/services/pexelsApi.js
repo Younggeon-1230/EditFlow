@@ -1,69 +1,56 @@
-const API_BASE_URL = 'https://api.pexels.com'
-const API_KEY = import.meta.env.VITE_PEXELS_API_KEY
+import { getJson } from './apiClient'
 
-async function requestPexels(path, query, signal) {
-  const url = new URL(`${API_BASE_URL}${path}`)
-  url.search = new URLSearchParams({
-    query,
-    per_page: '12',
-  }).toString()
+const DEFAULT_PER_PAGE = 12
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: API_KEY,
+function mapPexelsVideo(item) {
+  return {
+    id: `pexels-video-${item.external_id}`,
+    externalId: item.external_id,
+    provider: item.provider,
+    type: 'Video',
+    title: item.title ?? 'Video asset',
+    creatorName: item.creator_name ?? 'Pexels Creator',
+    thumbnailUrl: item.thumbnail_url ?? item.preview_url ?? '',
+    previewUrl: item.preview_url,
+    originalUrl: item.url,
+    url: item.url,
+    durationSeconds: item.duration_seconds,
+    width: item.width,
+    height: item.height,
+  }
+}
+
+export async function fetchPexelsAssets({
+  query,
+  type,
+  page = 1,
+  perPage = DEFAULT_PER_PAGE,
+  orientation,
+  size,
+  signal,
+}) {
+  if (type === 'photos') {
+    throw new Error('현재 백엔드 프록시는 Pexels 영상 검색만 지원합니다.')
+  }
+
+  const data = await getJson('/api/external/pexels/search', {
+    params: {
+      query,
+      page,
+      per_page: perPage,
+      orientation,
+      size,
     },
     signal,
   })
 
-  let data
-
-  try {
-    data = await response.json()
-  } catch {
-    data = null
+  return {
+    items: (data?.items ?? []).map(mapPexelsVideo),
+    page: data?.page ?? page,
+    perPage: data?.per_page ?? perPage,
+    totalResults: data?.total_results ?? null,
+    nextPage: data?.next_page ?? null,
+    prevPage: data?.prev_page ?? null,
+    cached: Boolean(data?.cached),
   }
-
-  if (!response.ok) {
-    throw new Error(
-      data?.error || data?.message || 'Pexels API 요청에 실패했습니다.',
-    )
-  }
-
-  return data
-}
-
-function normalizeVideos(videos = []) {
-  return videos.map((video) => ({
-    id: `pexels-video-${video.id}`,
-    type: 'Video',
-    title: 'Video asset',
-    creatorName: video.user?.name ?? 'Pexels Creator',
-    thumbnailUrl: video.image ?? '',
-    originalUrl: video.url,
-  }))
-}
-
-function normalizePhotos(photos = []) {
-  return photos.map((photo) => ({
-    id: `pexels-photo-${photo.id}`,
-    type: 'Photo',
-    title: 'Photo asset',
-    creatorName: photo.photographer ?? 'Pexels Creator',
-    thumbnailUrl: photo.src?.large ?? photo.src?.medium ?? '',
-    originalUrl: photo.url,
-  }))
-}
-
-export async function fetchPexelsAssets({ query, type, signal }) {
-  if (!API_KEY) {
-    throw new Error('Pexels API Key가 설정되지 않았습니다.')
-  }
-
-  if (type === 'photos') {
-    const data = await requestPexels('/v1/search', query, signal)
-    return normalizePhotos(data.photos)
-  }
-
-  const data = await requestPexels('/videos/search', query, signal)
-  return normalizeVideos(data.videos)
 }

@@ -1,9 +1,16 @@
-function ChecklistItem({ item, index, onToggle, onDelete }) {
+function ChecklistItem({
+  item,
+  index,
+  onToggle,
+  onDelete,
+  disabled = false,
+}) {
   return (
     <li className={`checklist-page-item${item.done ? ' done' : ''}`}>
       <label>
         <input
           checked={item.done}
+          disabled={disabled}
           onChange={() => onToggle(item.id)}
           type="checkbox"
         />
@@ -14,6 +21,7 @@ function ChecklistItem({ item, index, onToggle, onDelete }) {
       </label>
       <button
         aria-label={`${item.text} 삭제`}
+        disabled={disabled}
         onClick={() => onDelete(item.id)}
         type="button"
       >
