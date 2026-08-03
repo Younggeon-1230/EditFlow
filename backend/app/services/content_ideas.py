@@ -1,7 +1,7 @@
 import json
 from typing import Any
 
-from sqlalchemy import or_
+from sqlalchemy import delete, or_
 from sqlmodel import Session, select
 
 from app.models.content_idea import (
@@ -11,13 +11,30 @@ from app.models.content_idea import (
     ContentPlatform,
     ContentPriority,
 )
+from app.models.content_idea_broll import ContentIdeaBroll
+from app.models.content_idea_reference import ContentIdeaReference
 from app.models.user import utc_now
+from app.models.project import Project
+from app.models.saved_broll import SavedBroll
+from app.models.saved_reference import SavedReference
 from app.schemas.content_idea import (
     ContentIdeaCreate,
+    ContentIdeaConversionCreate,
     ContentIdeaRead,
     ContentIdeaUpdate,
     normalize_tags as _normalize_tags,
 )
+from app.schemas.project import ProjectRead
+
+
+class ContentIdeaNotFoundError(Exception):
+    pass
+
+
+class ContentIdeaConversionConflictError(Exception):
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
 
 
 def normalize_tags(tags: Any) -> Any:
@@ -153,5 +170,114 @@ def update_content_idea(
 
 
 def delete_content_idea(session: Session, idea: ContentIdea) -> None:
-    session.delete(idea)
-    session.commit()
+    assert idea.id is not None
+    try:
+        session.exec(
+            delete(ContentIdeaReference).where(
+                ContentIdeaReference.content_idea_id == idea.id
+            )
+        )
+        session.exec(
+            delete(ContentIdeaBroll).where(
+                ContentIdeaBroll.content_idea_id == idea.id
+            )
+        )
+        session.delete(idea)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+
+
+def convert_content_idea_to_project(
+    session: Session,
+    user_id: int,
+    idea_id: int,
+    data: ContentIdeaConversionCreate,
+) -> tuple[ProjectRead, ContentIdeaRead]:
+    idea = get_content_idea(session, user_id, idea_id)
+    if idea is None:
+        raise ContentIdeaNotFoundError
+    if (
+        idea.converted_project_id is not None
+        or idea.status == ContentIdeaStatus.CONVERTED
+    ):
+        raise ContentIdeaConversionConflictError("converted")
+    if idea.status == ContentIdeaStatus.ARCHIVED:
+        raise ContentIdeaConversionConflictError("archived")
+
+    project_data = data.model_dump()
+    if project_data.get("description") == "":
+        project_data["description"] = None
+    project = Project(user_id=user_id, client_name=None, **project_data)
+
+    try:
+        session.add(project)
+        session.flush()
+        assert project.id is not None
+        idea_references = list(
+            session.exec(
+                select(ContentIdeaReference).where(
+                    ContentIdeaReference.content_idea_id == idea.id
+                )
+            ).all()
+        )
+        idea_brolls = list(
+            session.exec(
+                select(ContentIdeaBroll).where(ContentIdeaBroll.content_idea_id == idea.id)
+            ).all()
+        )
+        for reference in idea_references:
+            session.add(
+                SavedReference(
+                    project_id=project.id,
+                    provider=reference.provider,
+                    external_id=reference.external_id,
+                    title=reference.title,
+                    url=reference.url,
+                    thumbnail_url=reference.thumbnail_url,
+                    channel_title=reference.channel_title,
+                    published_at=reference.published_at,
+                    note=reference.note,
+                )
+            )
+        for broll in idea_brolls:
+            session.add(
+                SavedBroll(
+                    project_id=project.id,
+                    provider=broll.provider,
+                    external_id=broll.external_id,
+                    title=broll.title,
+                    url=broll.url,
+                    preview_url=broll.preview_url,
+                    thumbnail_url=broll.thumbnail_url,
+                    creator_name=broll.creator_name,
+                    duration_seconds=broll.duration_seconds,
+                    width=broll.width,
+                    height=broll.height,
+                    note=broll.note,
+                )
+            )
+        idea.status = ContentIdeaStatus.CONVERTED
+        idea.converted_project_id = project.id
+        idea.updated_at = utc_now()
+        session.add(idea)
+        session.commit()
+        session.refresh(project)
+        session.refresh(idea)
+    except Exception:
+        session.rollback()
+        raise
+
+    return (
+        ProjectRead.model_validate(
+            {
+                **project.model_dump(),
+                "reference_count": len(idea_references),
+                "broll_count": len(idea_brolls),
+                "checklist_total": 0,
+                "checklist_completed": 0,
+            }
+        ),
+        to_content_idea_read(idea),
+    )

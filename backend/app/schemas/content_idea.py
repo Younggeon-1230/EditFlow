@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Self
 
 from pydantic import ConfigDict, field_validator, model_validator
@@ -10,6 +10,8 @@ from app.models.content_idea import (
     ContentPlatform,
     ContentPriority,
 )
+from app.models.project import ProjectStatus
+from app.schemas.project import ProjectRead
 
 
 def normalize_tags(value: Any) -> Any:
@@ -97,3 +99,17 @@ class ContentIdeaRead(SQLModel):
     converted_project_id: int | None
     created_at: datetime
     updated_at: datetime
+
+
+class ContentIdeaConversionCreate(SQLModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    title: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=5000)
+    status: ProjectStatus = ProjectStatus.PLANNING
+    due_date: date | None = None
+
+
+class ContentIdeaConversionRead(SQLModel):
+    project: ProjectRead
+    content_idea: ContentIdeaRead

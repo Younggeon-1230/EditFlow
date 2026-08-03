@@ -2,6 +2,7 @@ from sqlalchemy import delete, func
 from sqlmodel import Session, select
 
 from app.models.checklist_item import ChecklistItem
+from app.models.content_idea import ContentIdea, ContentIdeaStatus
 from app.models.project import Project
 from app.models.project_memo import ProjectMemo
 from app.models.saved_broll import SavedBroll
@@ -130,6 +131,17 @@ def update_project(
 
 def delete_project(session: Session, project: Project) -> None:
     assert project.id is not None
+    linked_ideas = session.exec(
+        select(ContentIdea).where(
+            ContentIdea.user_id == project.user_id,
+            ContentIdea.converted_project_id == project.id,
+        )
+    ).all()
+    for idea in linked_ideas:
+        idea.converted_project_id = None
+        idea.status = ContentIdeaStatus.READY
+        idea.updated_at = utc_now()
+        session.add(idea)
     for child_model in (ChecklistItem, SavedReference, SavedBroll, ProjectMemo):
         session.exec(
             delete(child_model).where(child_model.project_id == project.id)

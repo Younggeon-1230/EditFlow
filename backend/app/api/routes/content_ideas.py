@@ -12,6 +12,8 @@ from app.models.content_idea import (
 )
 from app.schemas.content_idea import (
     ContentIdeaCreate,
+    ContentIdeaConversionCreate,
+    ContentIdeaConversionRead,
     ContentIdeaRead,
     ContentIdeaUpdate,
 )
@@ -84,6 +86,40 @@ def create_content_idea(
         user.id,
         idea_create,
     )
+
+
+@router.post(
+    "/{idea_id}/convert-to-project",
+    response_model=ContentIdeaConversionRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def convert_content_idea_to_project(
+    idea_id: int,
+    conversion: ContentIdeaConversionCreate,
+    session: SessionDependency,
+    user: DevelopmentUserDependency,
+) -> ContentIdeaConversionRead:
+    assert user.id is not None
+    try:
+        project, idea = content_idea_service.convert_content_idea_to_project(
+            session,
+            user.id,
+            idea_id,
+            conversion,
+        )
+    except content_idea_service.ContentIdeaNotFoundError as error:
+        raise HTTPException(
+            status_code=404,
+            detail="콘텐츠 소재를 찾을 수 없습니다.",
+        ) from error
+    except content_idea_service.ContentIdeaConversionConflictError as error:
+        message = (
+            "보관된 콘텐츠 소재는 프로젝트로 전환할 수 없습니다."
+            if error.reason == "archived"
+            else "이미 프로젝트로 전환된 콘텐츠 소재입니다."
+        )
+        raise HTTPException(status_code=409, detail=message) from error
+    return ContentIdeaConversionRead(project=project, content_idea=idea)
 
 
 @router.get("/{idea_id}", response_model=ContentIdeaRead)
