@@ -1,5 +1,6 @@
 ﻿from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +21,21 @@ class Settings(BaseSettings):
     youtube_max_results_limit: int = 25
     pexels_default_per_page: int = 12
     pexels_max_per_page: int = 40
+
+    llm_provider: str = "openai"
+    llm_model: str = "gpt-5.6-luna"
+    llm_api_key: str | None = None
+    llm_connect_timeout_seconds: float = Field(default=5, gt=0)
+    llm_timeout_seconds: float = Field(default=25, gt=0)
+    llm_max_recommendations: int = Field(default=8, ge=1, le=8)
+    llm_default_recommendations: int = Field(default=5, ge=1, le=8)
+    llm_max_output_tokens: int = Field(default=3000, ge=256)
+    llm_prompt_version: str = "v1"
+    llm_recommendation_signing_secret: str | None = None
+    llm_recommendation_token_ttl_seconds: int = Field(default=900, ge=1)
+    llm_rate_limit_requests: int = Field(default=5, ge=1)
+    llm_rate_limit_window_seconds: int = Field(default=60, ge=1)
+    llm_live_calls_enabled: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",

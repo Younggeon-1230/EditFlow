@@ -7,6 +7,10 @@ from sqlmodel import Session
 from app.core.config import Settings, get_settings
 from app.core.database import get_session
 from app.models.user import User
+from app.providers.llm import (
+    ContentRecommendationProvider,
+    OpenAIContentRecommendationProvider,
+)
 from app.services.users import ensure_development_user
 
 
@@ -29,3 +33,15 @@ ExternalHttpClientDependency = Annotated[
     Depends(get_external_http_client),
 ]
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
+
+
+def get_content_recommendation_provider(
+    settings: SettingsDependency,
+) -> ContentRecommendationProvider:
+    return OpenAIContentRecommendationProvider(settings)
+
+
+ContentRecommendationProviderDependency = Annotated[
+    ContentRecommendationProvider,
+    Depends(get_content_recommendation_provider),
+]

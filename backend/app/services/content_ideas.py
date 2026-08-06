@@ -219,17 +219,36 @@ def create_content_idea(
     user_id: int,
     idea_create: ContentIdeaCreate,
 ) -> ContentIdeaRead:
+    return create_content_idea_with_source(
+        session,
+        user_id,
+        idea_create,
+        source=ContentIdeaSource.MANUAL,
+    )
+
+
+def create_content_idea_with_source(
+    session: Session,
+    user_id: int,
+    idea_create: ContentIdeaCreate,
+    *,
+    source: ContentIdeaSource,
+) -> ContentIdeaRead:
     data = idea_create.model_dump(exclude={"tags"})
     _normalize_nullable_text_fields(data)
     idea = ContentIdea(
         user_id=user_id,
-        source=ContentIdeaSource.MANUAL,
+        source=source,
         tags=serialize_tags(idea_create.tags),
         **data,
     )
-    session.add(idea)
-    session.commit()
-    session.refresh(idea)
+    try:
+        session.add(idea)
+        session.commit()
+        session.refresh(idea)
+    except Exception:
+        session.rollback()
+        raise
     return to_content_idea_read(idea)
 
 

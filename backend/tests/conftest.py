@@ -11,6 +11,7 @@ import app.models  # noqa: F401
 from app.core.database import get_session
 from app.main import app
 from app.services.pexels import pexels_search_cache
+from app.services.content_idea_recommendations import recommendation_runtime_state
 from app.services.youtube import youtube_search_cache
 
 
@@ -18,9 +19,11 @@ from app.services.youtube import youtube_search_cache
 def clear_external_search_caches() -> Generator[None, None, None]:
     youtube_search_cache.clear()
     pexels_search_cache.clear()
+    recommendation_runtime_state.clear()
     yield
     youtube_search_cache.clear()
     pexels_search_cache.clear()
+    recommendation_runtime_state.clear()
 
 
 @pytest.fixture
