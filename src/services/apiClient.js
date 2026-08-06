@@ -15,10 +15,14 @@ const DEFAULT_ERROR_MESSAGES = {
 }
 
 export class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, metadata = {}) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = metadata.code ?? null
+    this.retryable = Boolean(metadata.retryable)
+    this.requestId = metadata.requestId ?? null
+    this.details = metadata.details ?? null
   }
 }
 
@@ -72,11 +76,26 @@ export async function requestJson(
 
   if (!response.ok) {
     const configuredMessage = errorMessages[response.status]
+    const detail = data?.detail
+    const metadata = typeof detail === 'object' && !Array.isArray(detail)
+      ? {
+          code: detail.code,
+          retryable: detail.retryable,
+          requestId: detail.request_id,
+          details: detail,
+        }
+      : { details: detail }
+    const backendMessage = typeof detail === 'string'
+      ? detail
+      : typeof detail?.message === 'string'
+        ? detail.message
+        : null
     throw new ApiError(
       (typeof configuredMessage === 'function'
         ? configuredMessage(data)
-        : configuredMessage) ?? fallbackErrorMessage,
+        : configuredMessage) ?? backendMessage ?? fallbackErrorMessage,
       response.status,
+      metadata,
     )
   }
 

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import AIContentIdeaRecommendationDialog from '../components/contentIdeas/AIContentIdeaRecommendationDialog.jsx'
 import ContentIdeaFilters from '../components/contentIdeas/ContentIdeaFilters.jsx'
 import ContentIdeaConversionDialog from '../components/contentIdeas/ContentIdeaConversionDialog.jsx'
 import ContentIdeaForm from '../components/contentIdeas/ContentIdeaForm.jsx'
@@ -6,6 +7,7 @@ import ContentIdeaList from '../components/contentIdeas/ContentIdeaList.jsx'
 import ContentIdeaSummary from '../components/contentIdeas/ContentIdeaSummary.jsx'
 import useContentIdeas from '../hooks/useContentIdeas.js'
 import useContentIdeaSummary from '../hooks/useContentIdeaSummary.js'
+import useContentIdeaRecommendations from '../hooks/useContentIdeaRecommendations.js'
 import useProjects from '../hooks/useProjects.js'
 import { generatePath, useNavigate } from 'react-router-dom'
 import { ROUTES } from '../constants/app.js'
@@ -23,6 +25,9 @@ function ContentIdeasPage() {
   const [formIdea, setFormIdea] = useState(undefined)
   const [conversionIdea, setConversionIdea] = useState(null)
   const [registrationError, setRegistrationError] = useState(null)
+  const [isRecommendationOpen, setIsRecommendationOpen] = useState(false)
+  const recommendationTriggerRef = useRef(null)
+  const recommendationState = useContentIdeaRecommendations()
   const isFormOpen = formIdea !== undefined
   const hasFilters = ['search', 'status', 'platform', 'priority', 'source']
     .some((name) => filters[name].trim())
@@ -54,11 +59,33 @@ function ContentIdeasPage() {
     return result
   }
 
+  async function refreshAfterRecommendationSave(successCount) {
+    if (successCount > 0) await Promise.all([refetch(), refetchSummary()])
+  }
+
+  async function handleSaveRecommendation(clientKey) {
+    const result = await recommendationState.saveOne(clientKey)
+    await refreshAfterRecommendationSave(result.successCount)
+  }
+
+  async function handleSaveSelectedRecommendations() {
+    const result = await recommendationState.saveSelected()
+    await refreshAfterRecommendationSave(result.successCount)
+  }
+
+  function closeRecommendations() {
+    recommendationState.reset()
+    setIsRecommendationOpen(false)
+  }
+
   return (
     <main className="content-ideas-page">
       <header className="ideas-heading">
         <div><p className="page-eyebrow">CONTENT IDEAS</p><h1>콘텐츠 소재</h1><p>영상으로 만들고 싶은 아이디어를 저장하고 관리해 보세요.</p></div>
-        <button className="primary-button" onClick={openCreateForm} type="button"><span aria-hidden="true">+</span> 새 소재 등록</button>
+        <div className="ideas-heading-actions">
+          <button className="secondary-button ai-recommendation-trigger" onClick={() => setIsRecommendationOpen(true)} ref={recommendationTriggerRef} type="button"><span aria-hidden="true">✦</span> AI 소재 추천</button>
+          <button className="primary-button" onClick={openCreateForm} type="button"><span aria-hidden="true">+</span> 새 소재 등록</button>
+        </div>
       </header>
 
       <ContentIdeaSummary error={summaryError} isLoading={isSummaryLoading} onRetry={refetchSummary} summary={summary} />
@@ -82,6 +109,16 @@ function ContentIdeasPage() {
 
       {isFormOpen && <div className="form-overlay idea-form-overlay" onMouseDown={closeForm} role="presentation"><section aria-labelledby="idea-form-title" aria-modal="true" className="idea-form-dialog" onMouseDown={(event) => event.stopPropagation()} role="dialog"><div className="idea-form-heading"><div><p className="page-eyebrow">{formIdea ? 'EDIT IDEA' : 'NEW IDEA'}</p><h2 id="idea-form-title">{formIdea ? '콘텐츠 소재 수정' : '새 콘텐츠 소재 등록'}</h2></div><button aria-label="창 닫기" className="icon-button" disabled={isCreating || Boolean(formIdea && updatingIds.has(formIdea.id))} onClick={closeForm} type="button">×</button></div><ContentIdeaForm initialValue={formIdea} isSubmitting={formIdea ? updatingIds.has(formIdea.id) : isCreating} onCancel={closeForm} onSubmit={handleSubmit} /></section></div>}
       {conversionIdea && <ContentIdeaConversionDialog error={conversionError} idea={conversionIdea} isSubmitting={convertingIds.has(conversionIdea.id)} onCancel={() => setConversionIdea(null)} onSubmit={handleConversion} />}
+      {isRecommendationOpen && (
+        <AIContentIdeaRecommendationDialog
+          onClose={closeRecommendations}
+          onGenerate={recommendationState.generate}
+          onSaveOne={handleSaveRecommendation}
+          onSaveSelected={handleSaveSelectedRecommendations}
+          state={recommendationState}
+          triggerRef={recommendationTriggerRef}
+        />
+      )}
     </main>
   )
 }

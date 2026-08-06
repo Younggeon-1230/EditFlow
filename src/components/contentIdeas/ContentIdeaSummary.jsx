@@ -18,6 +18,7 @@ function ContentIdeaSummary({ summary, isLoading, error, onRetry }) {
         미디어 연결 <strong>{summary?.withAnyMediaCount ?? '–'}</strong>
         <span>Reference {summary?.withReferenceCount ?? '–'}</span>
         <span>B-roll {summary?.withBrollCount ?? '–'}</span>
+        <span>AI 추천 {summary?.bySource?.ai ?? '–'}</span>
         {isLoading && summary && <span role="status">통계 갱신 중…</span>}
       </p>
       {error && summary && <p className="idea-summary-inline-error" role="alert">최신 통계를 불러오지 못했습니다. <button onClick={onRetry} type="button">다시 시도</button></p>}

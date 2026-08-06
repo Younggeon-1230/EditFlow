@@ -21,6 +21,7 @@ function ContentIdeaCard({ idea, onEdit, onDelete, onConvert, onMediaChanged, lo
     <article className="idea-card">
       <div className="idea-card-badges">
         <span className="idea-platform-badge">{CONTENT_IDEA_PLATFORMS[idea.platform] ?? idea.platform}</span>
+        {idea.source === 'ai' && <span className="idea-badge ai-source-badge">{CONTENT_IDEA_SOURCES.ai}</span>}
         <ContentIdeaStatusBadge value={idea.status} />
         <ContentIdeaStatusBadge type="priority" value={idea.priority} />
       </div>

@@ -26,6 +26,27 @@ export const CONTENT_IDEA_SOURCES = {
   ai: 'AI 추천',
 }
 
+export const CONTENT_IDEA_RECOMMENDATION_TONES = {
+  informative: '정보형',
+  friendly: '친근한 톤',
+  professional: '전문적인 톤',
+  energetic: '활기찬 톤',
+  humorous: '유머러스한 톤',
+  inspirational: '영감을 주는 톤',
+}
+
+export const CONTENT_IDEA_RECOMMENDATION_LIMITS = {
+  topicMin: 2,
+  topic: 200,
+  targetAudience: 500,
+  contentFormat: 100,
+  keywords: 10,
+  keyword: 50,
+  referenceContext: 1500,
+  recommendationCountMin: 1,
+  recommendationCountMax: 8,
+}
+
 export const EMPTY_CONTENT_IDEA_FILTERS = {
   search: '',
   status: '',
