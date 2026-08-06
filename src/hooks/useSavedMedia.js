@@ -14,6 +14,8 @@ function useSavedMedia({
   createItem,
   updateNote,
   deleteItem,
+  enabled = true,
+  duplicateMessage = null,
 }) {
   const [items, setItems] = useState([])
   const [itemsProjectId, setItemsProjectId] = useState(null)
@@ -35,6 +37,12 @@ function useSavedMedia({
   itemsProjectIdRef.current = itemsProjectId
 
   const loadItems = useCallback(async () => {
+    if (!enabled) {
+      listController.current?.abort()
+      listSequence.current += 1
+      setIsLoading(false)
+      return
+    }
     if (!isBackendProjectId(backendProjectId)) {
       listController.current?.abort()
       listSequence.current += 1
@@ -77,10 +85,9 @@ function useSavedMedia({
         listController.current = null
       }
     }
-  }, [backendProjectId, listItems])
+  }, [backendProjectId, enabled, listItems])
 
   useEffect(() => {
-    setItems([])
     loadItems()
 
     return () => {
@@ -94,7 +101,7 @@ function useSavedMedia({
       mutationControllers.current.forEach((controller) => controller.abort())
       mutationControllers.current.clear()
     },
-    [backendProjectId],
+    [backendProjectId, enabled],
   )
 
   const savedExternalIds = useMemo(
@@ -153,6 +160,7 @@ function useSavedMedia({
       if (saveError instanceof ApiError && saveError.status === 409) {
         if (currentProjectId.current === targetProjectId) {
           await loadItems()
+          if (duplicateMessage) setError(duplicateMessage)
         }
         return null
       }

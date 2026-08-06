@@ -35,6 +35,17 @@ class ContentIdeaSource(StrEnum):
     AI = "ai"
 
 
+class ContentIdeaSort(StrEnum):
+    CREATED_DESC = "created_desc"
+    CREATED_ASC = "created_asc"
+    UPDATED_DESC = "updated_desc"
+    UPDATED_ASC = "updated_asc"
+    PRIORITY_DESC = "priority_desc"
+    PRIORITY_ASC = "priority_asc"
+    TITLE_ASC = "title_asc"
+    TITLE_DESC = "title_desc"
+
+
 class ContentIdea(SQLModel, table=True):
     __tablename__ = "content_ideas"
     __table_args__ = (

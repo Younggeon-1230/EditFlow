@@ -18,6 +18,7 @@ function BrollPanel({
   onRemove,
   isUpdatingItem = () => false,
   isDeletingItem = () => false,
+  removeConfirmMessage,
 }) {
   const canManage = Boolean(onChangeNote && onRemove)
 
@@ -96,6 +97,7 @@ function BrollPanel({
                       onChangeNote={onChangeNote}
                       onRemove={onRemove}
                       originalUrl={broll.url ?? broll.originalUrl}
+                      removeConfirmMessage={removeConfirmMessage}
                     />
                   ) : broll.url || broll.originalUrl ? (
                     <div className="saved-media-actions">

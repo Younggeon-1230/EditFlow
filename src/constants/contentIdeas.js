@@ -32,7 +32,19 @@ export const EMPTY_CONTENT_IDEA_FILTERS = {
   platform: '',
   priority: '',
   source: '',
+  sort: 'created_desc',
 }
+
+export const CONTENT_IDEA_SORT_OPTIONS = [
+  { value: 'created_desc', label: '최근 등록순' },
+  { value: 'updated_desc', label: '최근 수정순' },
+  { value: 'priority_desc', label: '우선순위 높은순' },
+  { value: 'priority_asc', label: '우선순위 낮은순' },
+  { value: 'title_asc', label: '제목 가나다순' },
+  { value: 'title_desc', label: '제목 역순' },
+  { value: 'created_asc', label: '오래된 등록순' },
+  { value: 'updated_asc', label: '오래된 수정순' },
+]
 
 export const CONTENT_IDEA_LIMITS = {
   title: 200,

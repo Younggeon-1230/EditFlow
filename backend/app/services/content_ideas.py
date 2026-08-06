@@ -1,12 +1,13 @@
 import json
 from typing import Any
 
-from sqlalchemy import delete, or_
+from sqlalchemy import case, delete, exists, func, or_
 from sqlmodel import Session, select
 
 from app.models.content_idea import (
     ContentIdea,
     ContentIdeaSource,
+    ContentIdeaSort,
     ContentIdeaStatus,
     ContentPlatform,
     ContentPriority,
@@ -21,6 +22,11 @@ from app.schemas.content_idea import (
     ContentIdeaCreate,
     ContentIdeaConversionCreate,
     ContentIdeaRead,
+    ContentIdeaPriorityCounts,
+    ContentIdeaPlatformCounts,
+    ContentIdeaSourceCounts,
+    ContentIdeaStatusCounts,
+    ContentIdeaSummaryRead,
     ContentIdeaUpdate,
     normalize_tags as _normalize_tags,
 )
@@ -94,6 +100,7 @@ def list_content_ideas(
     priority: ContentPriority | None = None,
     source: ContentIdeaSource | None = None,
     search: str | None = None,
+    sort: ContentIdeaSort = ContentIdeaSort.CREATED_DESC,
 ) -> list[ContentIdeaRead]:
     statement = select(ContentIdea).where(ContentIdea.user_id == user_id)
     if status is not None:
@@ -114,11 +121,97 @@ def list_content_ideas(
             )
         )
 
-    statement = statement.order_by(
-        ContentIdea.created_at.desc(),
-        ContentIdea.id.desc(),
-    )
+    order_by = {
+        ContentIdeaSort.CREATED_DESC: (ContentIdea.created_at.desc(), ContentIdea.id.desc()),
+        ContentIdeaSort.CREATED_ASC: (ContentIdea.created_at.asc(), ContentIdea.id.asc()),
+        ContentIdeaSort.UPDATED_DESC: (ContentIdea.updated_at.desc(), ContentIdea.id.desc()),
+        ContentIdeaSort.UPDATED_ASC: (ContentIdea.updated_at.asc(), ContentIdea.id.asc()),
+        ContentIdeaSort.TITLE_ASC: (ContentIdea.title.asc(), ContentIdea.id.asc()),
+        ContentIdeaSort.TITLE_DESC: (ContentIdea.title.desc(), ContentIdea.id.desc()),
+    }
+    if sort in (ContentIdeaSort.PRIORITY_DESC, ContentIdeaSort.PRIORITY_ASC):
+        priority_rank = case(
+            (ContentIdea.priority == ContentPriority.LOW, 1),
+            (ContentIdea.priority == ContentPriority.MEDIUM, 2),
+            (ContentIdea.priority == ContentPriority.HIGH, 3),
+            else_=0,
+        )
+        priority_order = (
+            priority_rank.desc()
+            if sort == ContentIdeaSort.PRIORITY_DESC
+            else priority_rank.asc()
+        )
+        statement = statement.order_by(
+            priority_order,
+            ContentIdea.updated_at.desc(),
+            ContentIdea.id.desc(),
+        )
+    else:
+        statement = statement.order_by(*order_by[sort])
     return [to_content_idea_read(idea) for idea in session.exec(statement).all()]
+
+
+def _enum_counts(
+    session: Session,
+    user_id: int,
+    column: Any,
+) -> dict[str, int]:
+    statement = (
+        select(column, func.count(ContentIdea.id))
+        .where(ContentIdea.user_id == user_id)
+        .group_by(column)
+    )
+    return {str(value): count for value, count in session.exec(statement).all()}
+
+
+def get_content_idea_summary(
+    session: Session,
+    user_id: int,
+) -> ContentIdeaSummaryRead:
+    total, latest_updated_at = session.exec(
+        select(func.count(ContentIdea.id), func.max(ContentIdea.updated_at)).where(
+            ContentIdea.user_id == user_id
+        )
+    ).one()
+    by_status = _enum_counts(session, user_id, ContentIdea.status)
+    by_priority = _enum_counts(session, user_id, ContentIdea.priority)
+    by_platform = _enum_counts(session, user_id, ContentIdea.platform)
+    by_source = _enum_counts(session, user_id, ContentIdea.source)
+
+    reference_exists = exists().where(
+        ContentIdeaReference.content_idea_id == ContentIdea.id
+    )
+    broll_exists = exists().where(ContentIdeaBroll.content_idea_id == ContentIdea.id)
+
+    def count_where(*conditions: Any) -> int:
+        return session.exec(
+            select(func.count(ContentIdea.id)).where(
+                ContentIdea.user_id == user_id,
+                *conditions,
+            )
+        ).one()
+
+    return ContentIdeaSummaryRead(
+        total=total,
+        by_status=ContentIdeaStatusCounts(**by_status),
+        by_priority=ContentIdeaPriorityCounts(**by_priority),
+        by_platform=ContentIdeaPlatformCounts(**by_platform),
+        by_source=ContentIdeaSourceCounts(**by_source),
+        converted_count=count_where(ContentIdea.converted_project_id.is_not(None)),
+        ready_count=by_status.get(ContentIdeaStatus.READY, 0),
+        active_count=sum(
+            by_status.get(status, 0)
+            for status in (
+                ContentIdeaStatus.IDEA,
+                ContentIdeaStatus.RESEARCHING,
+                ContentIdeaStatus.READY,
+            )
+        ),
+        with_reference_count=count_where(reference_exists),
+        with_broll_count=count_where(broll_exists),
+        with_any_media_count=count_where(or_(reference_exists, broll_exists)),
+        latest_updated_at=latest_updated_at,
+    )
 
 
 def create_content_idea(

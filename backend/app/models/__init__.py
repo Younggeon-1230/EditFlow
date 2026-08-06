@@ -8,6 +8,7 @@ from app.models.checklist_item import ChecklistItem
 from app.models.content_idea import (
     ContentIdea,
     ContentIdeaSource,
+    ContentIdeaSort,
     ContentIdeaStatus,
     ContentPlatform,
     ContentPriority,
@@ -27,6 +28,7 @@ __all__ = [
     "ContentIdeaBroll",
     "ContentIdeaReference",
     "ContentIdeaSource",
+    "ContentIdeaSort",
     "ContentIdeaStatus",
     "ContentPlatform",
     "ContentPriority",

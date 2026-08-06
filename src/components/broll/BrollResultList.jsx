@@ -1,6 +1,14 @@
 import BrollResultCard from './BrollResultCard'
 
-function BrollResultList({ results, hasSearched, project, savedBrolls }) {
+function BrollResultList({
+  results,
+  hasSearched,
+  project,
+  savedBrolls,
+  destinationType,
+  idea,
+  savedIdeaBrolls,
+}) {
   if (results.length === 0) {
     return (
       <div className="reference-state empty-state">
@@ -23,8 +31,11 @@ function BrollResultList({ results, hasSearched, project, savedBrolls }) {
       {results.map((asset) => (
         <BrollResultCard
           asset={asset}
+          destinationType={destinationType}
+          idea={idea}
           key={asset.id}
           project={project}
+          savedIdeaBrolls={savedIdeaBrolls}
           savedBrolls={savedBrolls}
         />
       ))}

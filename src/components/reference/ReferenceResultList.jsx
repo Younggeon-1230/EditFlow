@@ -5,6 +5,9 @@ function ReferenceResultList({
   hasSearched,
   project,
   savedReferences,
+  destinationType,
+  idea,
+  savedIdeaReferences,
 }) {
   if (results.length === 0) {
     return (
@@ -27,8 +30,11 @@ function ReferenceResultList({
     <div className="reference-result-list">
       {results.map((video) => (
         <ReferenceResultCard
+          destinationType={destinationType}
+          idea={idea}
           key={video.id}
           project={project}
+          savedIdeaReferences={savedIdeaReferences}
           savedReferences={savedReferences}
           video={video}
         />

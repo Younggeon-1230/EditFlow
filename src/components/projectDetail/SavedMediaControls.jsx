@@ -10,6 +10,7 @@ function SavedMediaControls({
   originalUrl,
   isUpdating = false,
   isDeleting = false,
+  removeConfirmMessage,
 }) {
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState(item.note ?? '')
@@ -46,7 +47,9 @@ function SavedMediaControls({
   }
 
   async function removeItem() {
-    const confirmed = window.confirm(`이 ${itemLabel}을 삭제할까요?`)
+    const confirmed = window.confirm(
+      removeConfirmMessage ?? `이 ${itemLabel}을 삭제할까요?`,
+    )
     if (confirmed) {
       await onRemove(item.id)
     }

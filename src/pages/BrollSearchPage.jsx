@@ -3,21 +3,27 @@ import BrollCategoryBar from '../components/broll/BrollCategoryBar'
 import BrollResultList from '../components/broll/BrollResultList'
 import BrollSearchBar from '../components/broll/BrollSearchBar'
 import BrollTypeToggle from '../components/broll/BrollTypeToggle'
-import ProjectSelector from '../components/checklist/ProjectSelector'
+import MediaDestinationSelector from '../components/media/MediaDestinationSelector.jsx'
+import useContentIdeaBrolls from '../hooks/useContentIdeaBrolls.js'
 import usePexelsSearch from '../hooks/usePexelsSearch'
-import useProjectSelection from '../hooks/useProjectSelection'
+import useMediaDestination from '../hooks/useMediaDestination.js'
 import useSavedBrolls from '../hooks/useSavedBrolls'
 
 function BrollSearchPage() {
   const [searchInput, setSearchInput] = useState('')
   const {
-    projects,
-    selectedProject,
-    selectedProjectId,
-    setSelectedProjectId,
-  } = useProjectSelection()
+    destinationType, setDestinationType,
+    projects, selectedProject, selectedProjectId, setSelectedProjectId,
+    ideas, selectedIdea, selectedIdeaId, setSelectedIdeaId,
+    isLoading: isLoadingIdeas, error: ideaSelectionError,
+  } = useMediaDestination()
   const savedBrolls = useSavedBrolls(
     selectedProject?.backendProjectId ?? null,
+    destinationType === 'project',
+  )
+  const savedIdeaBrolls = useContentIdeaBrolls(
+    selectedIdea?.id ?? null,
+    destinationType === 'idea',
   )
   const {
     query,
@@ -46,9 +52,16 @@ function BrollSearchPage() {
         <p>Pexels에서 무료 영상과 이미지를 검색하고 프로젝트에 저장하세요.</p>
       </section>
 
-      <ProjectSelector
-        onChange={setSelectedProjectId}
+      <MediaDestinationSelector
+        destinationType={destinationType}
+        ideaError={ideaSelectionError}
+        ideas={ideas}
+        isLoadingIdeas={isLoadingIdeas}
+        onDestinationTypeChange={setDestinationType}
+        onIdeaChange={setSelectedIdeaId}
+        onProjectChange={setSelectedProjectId}
         projects={projects}
+        selectedIdeaId={selectedIdeaId}
         selectedProjectId={selectedProjectId}
       />
 
@@ -100,16 +113,24 @@ function BrollSearchPage() {
 
         {!isLoading && !error && (
           <BrollResultList
+            destinationType={destinationType}
             hasSearched={Boolean(query)}
+            idea={selectedIdea}
             project={selectedProject}
             results={results}
+            savedIdeaBrolls={savedIdeaBrolls}
             savedBrolls={savedBrolls}
           />
         )}
 
-        {savedBrolls.error && (
+        {destinationType === 'project' && savedBrolls.error && (
           <div className="reference-state error-state" role="alert">
             <p>{savedBrolls.error}</p>
+          </div>
+        )}
+        {destinationType === 'idea' && savedIdeaBrolls.error && (
+          <div className="reference-state error-state" role="alert">
+            <p>{savedIdeaBrolls.error}</p>
           </div>
         )}
       </section>

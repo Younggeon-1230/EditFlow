@@ -1,6 +1,13 @@
 import SaveBrollButton from './SaveBrollButton'
 
-function BrollResultCard({ asset, project, savedBrolls }) {
+function BrollResultCard({
+  asset,
+  project,
+  savedBrolls,
+  destinationType,
+  idea,
+  savedIdeaBrolls,
+}) {
   return (
     <article className="broll-result-card">
       <a
@@ -29,7 +36,10 @@ function BrollResultCard({ asset, project, savedBrolls }) {
           </a>
           <SaveBrollButton
             asset={asset}
+            destinationType={destinationType}
+            idea={idea}
             project={project}
+            savedIdeaBrolls={savedIdeaBrolls}
             savedBrolls={savedBrolls}
           />
         </div>

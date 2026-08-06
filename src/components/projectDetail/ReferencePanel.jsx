@@ -9,6 +9,7 @@ function ReferencePanel({
   onRemove,
   isUpdatingItem = () => false,
   isDeletingItem = () => false,
+  removeConfirmMessage,
 }) {
   const canManage = Boolean(onChangeNote && onRemove)
 
@@ -71,6 +72,7 @@ function ReferencePanel({
                     onChangeNote={onChangeNote}
                     onRemove={onRemove}
                     originalUrl={reference.url ?? reference.videoUrl}
+                    removeConfirmMessage={removeConfirmMessage}
                   />
                 ) : reference.url || reference.videoUrl ? (
                   <div className="saved-media-actions">

@@ -3,6 +3,7 @@ import {
   CONTENT_IDEA_PRIORITIES,
   CONTENT_IDEA_SOURCES,
   CONTENT_IDEA_STATUSES,
+  CONTENT_IDEA_SORT_OPTIONS,
 } from '../../constants/contentIdeas.js'
 
 const filterSelects = [
@@ -13,7 +14,8 @@ const filterSelects = [
 ]
 
 function ContentIdeaFilters({ filters, onChange, onClear }) {
-  const hasFilters = Object.values(filters).some((value) => value.trim())
+  const hasFilters = ['search', 'status', 'platform', 'priority', 'source']
+    .some((name) => filters[name].trim())
   function updateFilter(event) {
     const { name, value } = event.target
     onChange((current) => ({ ...current, [name]: value }))
@@ -43,6 +45,14 @@ function ContentIdeaFilters({ filters, onChange, onClear }) {
             </select>
           </label>
         ))}
+        <label className="idea-sort-field">
+          <span>정렬</span>
+          <select name="sort" onChange={updateFilter} value={filters.sort}>
+            {CONTENT_IDEA_SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </label>
       </div>
       <button className="secondary-button idea-filter-clear" disabled={!hasFilters} onClick={onClear} type="button">
         필터 초기화

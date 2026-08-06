@@ -6,6 +6,7 @@ from app.api.dependencies import DevelopmentUserDependency, SessionDependency
 from app.models.content_idea import (
     ContentIdea,
     ContentIdeaSource,
+    ContentIdeaSort,
     ContentIdeaStatus,
     ContentPlatform,
     ContentPriority,
@@ -15,6 +16,7 @@ from app.schemas.content_idea import (
     ContentIdeaConversionCreate,
     ContentIdeaConversionRead,
     ContentIdeaRead,
+    ContentIdeaSummaryRead,
     ContentIdeaUpdate,
 )
 from app.services import content_ideas as content_idea_service
@@ -57,6 +59,7 @@ def read_content_ideas(
     priority: ContentPriority | None = None,
     source: ContentIdeaSource | None = None,
     search: Annotated[str | None, Query(max_length=5000)] = None,
+    sort: ContentIdeaSort = ContentIdeaSort.CREATED_DESC,
 ) -> list[ContentIdeaRead]:
     assert user.id is not None
     return content_idea_service.list_content_ideas(
@@ -67,7 +70,17 @@ def read_content_ideas(
         priority=priority,
         source=source,
         search=search,
+        sort=sort,
     )
+
+
+@router.get("/summary", response_model=ContentIdeaSummaryRead)
+def read_content_idea_summary(
+    session: SessionDependency,
+    user: DevelopmentUserDependency,
+) -> ContentIdeaSummaryRead:
+    assert user.id is not None
+    return content_idea_service.get_content_idea_summary(session, user.id)
 
 
 @router.post(

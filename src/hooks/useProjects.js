@@ -87,12 +87,14 @@ function useProjects() {
   const [syncError, setSyncError] = useState(null)
   const [isCreating, setIsCreating] = useState(false)
   const [isMigrating, setIsMigrating] = useState(false)
+  const projectsRef = useRef(projects)
   const activeControllers = useRef(new Set())
   const createInProgress = useRef(false)
   const migrationInProgress = useRef(false)
   const isMounted = useRef(true)
 
   useEffect(() => {
+    projectsRef.current = projects
     try {
       localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(projects))
     } catch {
@@ -383,6 +385,42 @@ function useProjects() {
     }
   }
 
+  function registerBackendProject(serverProject) {
+    if (!isBackendProjectId(serverProject?.backendProjectId)) {
+      throw new Error('서버 프로젝트 ID를 확인할 수 없습니다.')
+    }
+
+    const existingProject = projectsRef.current.find(
+      (project) => project.backendProjectId === serverProject.backendProjectId,
+    )
+    if (existingProject) {
+      return existingProject
+    }
+
+    const localProject = createLocalProject({
+      title: serverProject.title,
+      description: serverProject.description,
+      clientName: serverProject.clientName,
+      deadline: serverProject.dueDate,
+      dueDate: serverProject.dueDate,
+      status: undefined,
+    })
+    const syncedProject = mergeBackendProject(localProject, serverProject)
+    const nextProjects = [syncedProject, ...projectsRef.current]
+
+    try {
+      localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(nextProjects))
+    } catch {
+      throw new Error(
+        '프로젝트는 생성됐지만 화면 목록에 연결하지 못했습니다. 프로젝트 목록을 새로고침해 주세요.',
+      )
+    }
+
+    projectsRef.current = nextProjects
+    setProjects(nextProjects)
+    return syncedProject
+  }
+
   return {
     projects,
     filteredProjects,
@@ -395,6 +433,7 @@ function useProjects() {
     addProject,
     updateProject,
     deleteProject,
+    registerBackendProject,
     migrateProjects,
   }
 }

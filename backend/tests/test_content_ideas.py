@@ -378,4 +378,5 @@ def test_openapi_exposes_content_idea_crud_and_filters(
         "priority",
         "source",
         "search",
+        "sort",
     }

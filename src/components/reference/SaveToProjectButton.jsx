@@ -18,7 +18,14 @@ function isVideoSaved(videoId) {
   }
 }
 
-function SaveToProjectButton({ video, project, savedReferences }) {
+function SaveToProjectButton({
+  video,
+  project,
+  savedReferences,
+  destinationType = 'project',
+  idea,
+  savedIdeaReferences,
+}) {
   const externalId = video.externalId ?? video.id
   const usesBackend = isBackendProjectId(project?.backendProjectId)
   const [isSavedLocally, setIsSavedLocally] = useState(() =>
@@ -30,6 +37,11 @@ function SaveToProjectButton({ video, project, savedReferences }) {
   }, [project?.id, video.id])
 
   async function handleSave() {
+    if (destinationType === 'idea') {
+      if (idea) await savedIdeaReferences.save(video)
+      return
+    }
+
     if (!project) {
       return
     }
@@ -64,25 +76,33 @@ function SaveToProjectButton({ video, project, savedReferences }) {
     }
   }
 
-  const isSaved = usesBackend
-    ? savedReferences.isSaved(externalId)
-    : isSavedLocally
-  const isSaving = usesBackend && savedReferences.isSavingItem(externalId)
-  const isChecking = usesBackend && savedReferences.isLoading
-  const label = !project
-    ? '프로젝트 선택'
+  const isIdeaDestination = destinationType === 'idea'
+  const isSaved = isIdeaDestination
+    ? savedIdeaReferences.isSaved(externalId)
+    : usesBackend
+      ? savedReferences.isSaved(externalId)
+      : isSavedLocally
+  const isSaving = isIdeaDestination
+    ? savedIdeaReferences.isSavingItem(externalId)
+    : usesBackend && savedReferences.isSavingItem(externalId)
+  const isChecking = isIdeaDestination
+    ? savedIdeaReferences.isLoading
+    : usesBackend && savedReferences.isLoading
+  const hasDestination = isIdeaDestination ? Boolean(idea) : Boolean(project)
+  const label = !hasDestination
+    ? isIdeaDestination ? '콘텐츠 소재 선택' : '프로젝트 선택'
     : isSaved
       ? '저장됨'
       : isSaving
         ? '저장 중'
         : isChecking
           ? '저장 확인 중'
-          : '프로젝트에 저장'
+          : isIdeaDestination ? '소재에 저장' : '프로젝트에 저장'
 
   return (
     <button
       className="save-reference-button"
-      disabled={!project || isSaved || isSaving || isChecking}
+      disabled={!hasDestination || isSaved || isSaving || isChecking}
       onClick={handleSave}
       type="button"
     >

@@ -1,0 +1,63 @@
+warning: in the working copy of 'backend/app/api/routes/content_ideas.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/models/__init__.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/models/content_idea.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/schemas/content_idea.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/services/content_ideas.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/tests/test_content_ideas.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/broll/BrollResultCard.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/broll/BrollResultList.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/broll/SaveBrollButton.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/contentIdeas/ContentIdeaCard.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/contentIdeas/ContentIdeaFilters.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/contentIdeas/ContentIdeaList.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/projectDetail/BrollPanel.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/projectDetail/ReferencePanel.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/projectDetail/SavedMediaControls.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/reference/ReferenceResultCard.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/reference/ReferenceResultList.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/reference/SaveToProjectButton.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/constants/contentIdeas.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/hooks/useContentIdeas.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/hooks/useProjects.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/hooks/useSavedBrolls.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/hooks/useSavedMedia.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/hooks/useSavedReferences.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/pages/BrollSearchPage.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/pages/ContentIdeasPage.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/pages/MainDashboardPage.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/pages/ReferenceSearchPage.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/services/apiClient.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/services/contentIdeasApi.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/styles/global.css', LF will be replaced by CRLF the next time Git touches it
+ backend/app/api/routes/content_ideas.py            |  13 [32m++[m
+ backend/app/models/__init__.py                     |   2 [32m+[m
+ backend/app/models/content_idea.py                 |  11 [32m++[m
+ backend/app/schemas/content_idea.py                |  43 [32m++++++[m
+ backend/app/services/content_ideas.py              | 103 [32m++++++++++++[m[31m-[m
+ backend/tests/test_content_ideas.py                |   1 [32m+[m
+ src/components/broll/BrollResultCard.jsx           |  12 [32m+[m[31m-[m
+ src/components/broll/BrollResultList.jsx           |  13 [32m+[m[31m-[m
+ src/components/broll/SaveBrollButton.jsx           |  40 [32m++++[m[31m--[m
+ src/components/contentIdeas/ContentIdeaCard.jsx    |  17 [32m++[m[31m-[m
+ src/components/contentIdeas/ContentIdeaFilters.jsx |  12 [32m+[m[31m-[m
+ src/components/contentIdeas/ContentIdeaList.jsx    |   6 [32m+[m[31m-[m
+ src/components/projectDetail/BrollPanel.jsx        |   2 [32m+[m
+ src/components/projectDetail/ReferencePanel.jsx    |   2 [32m+[m
+ .../projectDetail/SavedMediaControls.jsx           |   5 [32m+[m[31m-[m
+ src/components/reference/ReferenceResultCard.jsx   |  12 [32m+[m[31m-[m
+ src/components/reference/ReferenceResultList.jsx   |   6 [32m+[m
+ src/components/reference/SaveToProjectButton.jsx   |  40 [32m++++[m[31m--[m
+ src/constants/contentIdeas.js                      |  12 [32m++[m
+ src/hooks/useContentIdeas.js                       |  79 [32m+++++++++[m[31m-[m
+ src/hooks/useProjects.js                           |  39 [32m+++++[m
+ src/hooks/useSavedBrolls.js                        |   3 [32m+[m[31m-[m
+ src/hooks/useSavedMedia.js                         |  14 [32m+[m[31m-[m
+ src/hooks/useSavedReferences.js                    |   3 [32m+[m[31m-[m
+ src/pages/BrollSearchPage.jsx                      |  41 [32m++++[m[31m--[m
+ src/pages/ContentIdeasPage.jsx                     |  42 [32m+++++[m[31m-[m
+ src/pages/MainDashboardPage.jsx                    |   4 [32m+[m
+ src/pages/ReferenceSearchPage.jsx                  |  41 [32m++++[m[31m--[m
+ src/services/apiClient.js                          |   5 [32m+[m[31m-[m
+ src/services/contentIdeasApi.js                    |  67 [32m+++++++++[m
+ src/styles/global.css                              | 159 [32m++++++++++++++++++++[m[31m-[m
+ 31 files changed, 777 insertions(+), 72 deletions(-)

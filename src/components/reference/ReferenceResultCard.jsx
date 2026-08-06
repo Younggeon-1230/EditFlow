@@ -2,7 +2,14 @@ import formatDate from '../../utils/formatDate'
 import formatNumber from '../../utils/formatNumber'
 import SaveToProjectButton from './SaveToProjectButton'
 
-function ReferenceResultCard({ video, project, savedReferences }) {
+function ReferenceResultCard({
+  video,
+  project,
+  savedReferences,
+  destinationType,
+  idea,
+  savedIdeaReferences,
+}) {
   const hasValue = (value) => value !== null && value !== undefined
 
   return (
@@ -57,7 +64,10 @@ function ReferenceResultCard({ video, project, savedReferences }) {
           영상 보기
         </a>
         <SaveToProjectButton
+          destinationType={destinationType}
+          idea={idea}
           project={project}
+          savedIdeaReferences={savedIdeaReferences}
           savedReferences={savedReferences}
           video={video}
         />

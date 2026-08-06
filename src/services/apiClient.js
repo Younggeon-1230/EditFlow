@@ -71,8 +71,11 @@ export async function requestJson(
   }
 
   if (!response.ok) {
+    const configuredMessage = errorMessages[response.status]
     throw new ApiError(
-      errorMessages[response.status] ?? fallbackErrorMessage,
+      (typeof configuredMessage === 'function'
+        ? configuredMessage(data)
+        : configuredMessage) ?? fallbackErrorMessage,
       response.status,
     )
   }

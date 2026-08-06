@@ -6,13 +6,14 @@ import {
   updateSavedBrollNote,
 } from '../services/savedBrollsApi'
 
-function useSavedBrolls(backendProjectId) {
+function useSavedBrolls(backendProjectId, enabled = true) {
   return useSavedMedia({
     backendProjectId,
     listItems: getSavedBrolls,
     createItem: createSavedBroll,
     updateNote: updateSavedBrollNote,
     deleteItem: deleteSavedBroll,
+    enabled,
   })
 }
 

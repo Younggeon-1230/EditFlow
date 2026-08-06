@@ -101,6 +101,49 @@ class ContentIdeaRead(SQLModel):
     updated_at: datetime
 
 
+class ContentIdeaStatusCounts(SQLModel):
+    idea: int = 0
+    researching: int = 0
+    ready: int = 0
+    converted: int = 0
+    archived: int = 0
+
+
+class ContentIdeaPriorityCounts(SQLModel):
+    low: int = 0
+    medium: int = 0
+    high: int = 0
+
+
+class ContentIdeaPlatformCounts(SQLModel):
+    youtube: int = 0
+    shorts: int = 0
+    instagram: int = 0
+    tiktok: int = 0
+    blog: int = 0
+    other: int = 0
+
+
+class ContentIdeaSourceCounts(SQLModel):
+    manual: int = 0
+    ai: int = 0
+
+
+class ContentIdeaSummaryRead(SQLModel):
+    total: int
+    by_status: ContentIdeaStatusCounts
+    by_priority: ContentIdeaPriorityCounts
+    by_platform: ContentIdeaPlatformCounts
+    by_source: ContentIdeaSourceCounts
+    converted_count: int
+    ready_count: int
+    active_count: int
+    with_reference_count: int
+    with_broll_count: int
+    with_any_media_count: int
+    latest_updated_at: datetime | None
+
+
 class ContentIdeaConversionCreate(SQLModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
