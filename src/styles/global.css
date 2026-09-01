@@ -3725,6 +3725,8 @@ a {
 .idea-linked-project > strong, .project-source-idea-content > strong { color: #493d37; font-size: 1.08rem; overflow-wrap: anywhere; }
 .idea-linked-project dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; margin: 0; }
 .relationship-mapping-warning { padding: 13px 14px; border: 1px solid #ecd6a5; border-radius: 12px; background: #fff8e7; color: #795e2f !important; font-size: .84rem; }
+.relationship-restore { display: grid; justify-items: start; gap: 12px; }
+.relationship-restore-error { margin: 0; color: #a33c35; font-size: .85rem; }
 .relationship-error { display: grid; justify-items: start; gap: 12px; }
 .idea-detail-media { margin-top: 20px; }
 .idea-detail-media .idea-media-panel { margin-top: 0; }
@@ -3732,6 +3734,32 @@ a {
 .relationship-badges { display: flex; flex-wrap: wrap; gap: 7px; }
 .project-source-idea-content { grid-template-columns: 1fr auto; width: 100%; }
 .project-source-idea-content .relationship-badges { grid-column: 1 / -1; }
+
+.server-project-import-overlay { overflow-y: auto; padding: 24px; }
+.server-project-import-dialog {
+  width: min(100%, 820px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 30px;
+  border-radius: 24px;
+  background: #fffaf7;
+  box-shadow: 0 24px 70px rgb(58 42 34 / 22%);
+}
+.server-project-import-heading { align-items: flex-start; }
+.server-project-import-heading h2 { margin: 4px 0 0; }
+.server-project-import-heading p:last-child { max-width: 650px; margin: 9px 0 0; color: #776a63; line-height: 1.6; }
+.server-project-import-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 22px 0 14px; }
+.server-project-import-toolbar span { color: #675951; font-weight: 800; }
+.server-project-import-announcement { margin: 0 0 14px; padding: 12px 14px; border: 1px solid #bbd9c9; border-radius: 12px; background: #f2fbf6; color: #377058; }
+.server-project-import-state { margin: 0; padding: 34px 20px; border: 1px dashed #dccdc5; border-radius: 16px; color: #756861; text-align: center; }
+.server-project-import-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.server-project-import-item { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-width: 0; padding: 18px; border: 1px solid #e8ddd6; border-radius: 16px; background: #fff; }
+.server-project-import-copy { display: grid; gap: 8px; min-width: 0; }
+.server-project-import-copy > div { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; color: #7a6e67; font-size: .82rem; }
+.server-project-import-copy > strong { color: #493d37; overflow-wrap: anywhere; }
+.server-project-import-copy > small { color: #81746d; }
+.server-project-import-error { margin: 0; color: #a33c35; font-size: .84rem; }
+.server-project-import-item > button { flex: 0 0 auto; min-width: 104px; }
 
 @media (max-width: 768px) {
   .content-idea-detail-page { width: min(100% - 32px, 1120px); padding-top: 34px; }
@@ -3746,6 +3774,10 @@ a {
   .idea-detail-actions > *, .idea-detail-state-actions > * { width: 100%; text-align: center; }
   .idea-detail-meta, .idea-linked-project dl, .project-source-idea-content { grid-template-columns: 1fr; }
   .project-source-idea-content .relationship-badges { grid-column: auto; }
+  .server-project-import-overlay { padding: 12px; }
+  .server-project-import-dialog { max-height: calc(100vh - 24px); padding: 18px; border-radius: 18px; }
+  .server-project-import-heading, .server-project-import-toolbar, .server-project-import-item { align-items: stretch; flex-direction: column; }
+  .server-project-import-toolbar > button, .server-project-import-item > button, .relationship-restore > button { width: 100%; }
 }
 
 /* Media destinations and Content Idea media management */

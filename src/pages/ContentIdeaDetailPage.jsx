@@ -40,7 +40,13 @@ function ContentIdeaDetailPage() {
   const ideaId = parseIdeaId(routeIdeaId)
   const navigate = useNavigate()
   const detail = useContentIdeaDetail(ideaId)
-  const { projects, registerBackendProject } = useProjects()
+  const {
+    projects,
+    registerBackendProject,
+    restoreErrors,
+    restoringProjectIds,
+    restoreServerProject,
+  } = useProjects()
   const relation = useContentIdeaProjectRelation(detail.idea?.convertedProjectId ?? null)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isConversionOpen, setIsConversionOpen] = useState(false)
@@ -109,6 +115,13 @@ function ContentIdeaDetailPage() {
       setRegistrationError(error.message || '프로젝트의 로컬 화면 연결을 만들지 못했습니다.')
     }
     return result
+  }
+
+  async function handleProjectRestore() {
+    const restored = await restoreServerProject(idea.convertedProjectId)
+    if (restored) {
+      navigate(generatePath(ROUTES.projectDetail, { projectId: restored.id }))
+    }
   }
 
   return (
@@ -185,7 +198,11 @@ function ContentIdeaDetailPage() {
               {localProject ? (
                 <Link className="primary-button link-button" to={generatePath(ROUTES.projectDetail, { projectId: localProject.id })}>프로젝트 보기</Link>
               ) : (
-                <p className="relationship-mapping-warning">연결된 서버 프로젝트가 있지만 이 브라우저의 로컬 프로젝트 매핑이 없습니다. 잘못된 ID로 이동하지 않도록 링크를 제공하지 않습니다.</p>
+                <div className="relationship-restore">
+                  <p className="relationship-mapping-warning">이 프로젝트는 서버에 존재하지만 현재 브라우저의 프로젝트 목록에는 연결되어 있지 않습니다. 가져오면 서버에 새 프로젝트를 만들지 않고 이 브라우저에만 연결합니다.</p>
+                  {restoreErrors[idea.convertedProjectId] && <p className="relationship-restore-error" role="alert">{restoreErrors[idea.convertedProjectId]}</p>}
+                  <button className="primary-button" disabled={restoringProjectIds.has(idea.convertedProjectId)} onClick={handleProjectRestore} type="button">{restoringProjectIds.has(idea.convertedProjectId) ? '가져오는 중…' : '이 프로젝트 가져오기'}</button>
+                </div>
               )}
             </div>
           ) : null}

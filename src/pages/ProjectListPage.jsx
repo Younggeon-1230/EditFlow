@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import ProjectCard from '../components/projects/ProjectCard'
 import ProjectForm from '../components/projects/ProjectForm'
 import ProjectSearchBar from '../components/projects/ProjectSearchBar'
+import ServerProjectImportDialog from '../components/projects/ServerProjectImportDialog.jsx'
 import useProjects from '../hooks/useProjects'
 
 function ProjectListPage() {
   const {
     filteredProjects,
+    projects,
     searchTerm,
     setSearchTerm,
     addProject,
@@ -15,10 +17,16 @@ function ProjectListPage() {
     syncError,
     isMigrating,
     migrateProjects,
+    restoringProjectIds,
+    restoreErrors,
+    restoreServerProject,
   } = useProjects()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
   const [migrationResult, setMigrationResult] = useState(null)
+  const [isServerImportOpen, setIsServerImportOpen] = useState(false)
+  const serverImportTriggerRef = useRef(null)
+  const closeServerImport = useCallback(() => setIsServerImportOpen(false), [])
 
   function openCreateForm() {
     setEditingProject(null)
@@ -78,6 +86,14 @@ function ProjectListPage() {
           <p>편집 프로젝트를 생성하고 진행 상태를 관리하세요.</p>
         </div>
         <div className="projects-heading-actions">
+          <button
+            className="secondary-button"
+            onClick={() => setIsServerImportOpen(true)}
+            ref={serverImportTriggerRef}
+            type="button"
+          >
+            서버 프로젝트 가져오기
+          </button>
           <button
             className="secondary-button"
             disabled={isMigrating}
@@ -177,6 +193,16 @@ function ProjectListPage() {
             />
           </section>
         </div>
+      )}
+      {isServerImportOpen && (
+        <ServerProjectImportDialog
+          localProjects={projects}
+          onClose={closeServerImport}
+          onRestore={restoreServerProject}
+          restoreErrors={restoreErrors}
+          restoringProjectIds={restoringProjectIds}
+          triggerRef={serverImportTriggerRef}
+        />
       )}
     </main>
   )

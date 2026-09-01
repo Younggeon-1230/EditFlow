@@ -19,6 +19,10 @@ const FRONTEND_STATUS_BY_BACKEND = {
   archived: '보관됨',
 }
 
+export function getProjectStatusLabel(status) {
+  return FRONTEND_STATUS_BY_BACKEND[status] ?? status ?? '상태 미입력'
+}
+
 function hasOwn(object, key) {
   return Object.prototype.hasOwnProperty.call(object, key)
 }

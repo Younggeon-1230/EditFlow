@@ -5,16 +5,18 @@ import initialProjects from '../data/initialProjects'
 import {
   createProject,
   deleteProject as deleteProjectRequest,
+  getProject,
   getProjects,
   mergeBackendProject,
   updateProject as updateProjectRequest,
 } from '../services/projectsApi.js'
 import { migrateLocalProjectsToBackend } from '../utils/projectMigration.js'
 import { removeStoredProjectMemos } from '../utils/projectMemosStorage.js'
-
-function isBackendProjectId(value) {
-  return Number.isInteger(value) && value > 0
-}
+import {
+  createLocalProject,
+  createRecoveredLocalProject,
+  isBackendProjectId,
+} from '../utils/serverProjectRecovery.js'
 
 function normalizeLocalProject(project) {
   const hasBackendProject = isBackendProjectId(project.backendProjectId)
@@ -39,14 +41,6 @@ function loadProjects() {
   }
 }
 
-function createProjectId() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID()
-  }
-
-  return `project-${Date.now()}`
-}
-
 function removeProjectFromKeyedStorage(storageKey, projectId) {
   try {
     const value = JSON.parse(localStorage.getItem(storageKey) ?? '{}')
@@ -66,31 +60,19 @@ function cleanupLocalProjectData(projectId) {
   removeStoredProjectMemos(projectId)
 }
 
-function createLocalProject(projectValues) {
-  return {
-    id: createProjectId(),
-    ...projectValues,
-    backendProjectId: null,
-    syncStatus: 'syncing',
-    lastSyncError: null,
-    referenceCount: 0,
-    brollCount: 0,
-    checklistDone: 0,
-    checklistTotal: 0,
-    createdAt: new Date().toISOString().slice(0, 10),
-  }
-}
-
 function useProjects() {
   const [projects, setProjects] = useState(loadProjects)
   const [searchTerm, setSearchTerm] = useState('')
   const [syncError, setSyncError] = useState(null)
   const [isCreating, setIsCreating] = useState(false)
   const [isMigrating, setIsMigrating] = useState(false)
+  const [restoringProjectIds, setRestoringProjectIds] = useState(() => new Set())
+  const [restoreErrors, setRestoreErrors] = useState({})
   const projectsRef = useRef(projects)
   const activeControllers = useRef(new Set())
   const createInProgress = useRef(false)
   const migrationInProgress = useRef(false)
+  const restoreLocks = useRef(new Set())
   const isMounted = useRef(true)
 
   useEffect(() => {
@@ -153,6 +135,7 @@ function useProjects() {
       isMounted.current = false
       activeControllers.current.forEach((controller) => controller.abort())
       activeControllers.current.clear()
+      restoreLocks.current.clear()
     }
   }, [])
 
@@ -397,15 +380,7 @@ function useProjects() {
       return existingProject
     }
 
-    const localProject = createLocalProject({
-      title: serverProject.title,
-      description: serverProject.description,
-      clientName: serverProject.clientName,
-      deadline: serverProject.dueDate,
-      dueDate: serverProject.dueDate,
-      status: undefined,
-    })
-    const syncedProject = mergeBackendProject(localProject, serverProject)
+    const syncedProject = createRecoveredLocalProject(serverProject)
     const nextProjects = [syncedProject, ...projectsRef.current]
 
     try {
@@ -421,6 +396,51 @@ function useProjects() {
     return syncedProject
   }
 
+  async function restoreServerProject(backendProjectId) {
+    if (!isBackendProjectId(backendProjectId)) return null
+    const existingProject = projectsRef.current.find(
+      (project) => project.backendProjectId === backendProjectId,
+    )
+    if (existingProject) return existingProject
+    if (restoreLocks.current.has(backendProjectId)) return null
+
+    restoreLocks.current.add(backendProjectId)
+    setRestoringProjectIds((current) => new Set(current).add(backendProjectId))
+    setRestoreErrors((current) => {
+      const next = { ...current }
+      delete next[backendProjectId]
+      return next
+    })
+    const controller = new AbortController()
+    activeControllers.current.add(controller)
+    try {
+      const serverProject = await getProject(backendProjectId, controller.signal)
+      if (!isMounted.current) return null
+      const mappedDuringRequest = projectsRef.current.find(
+        (project) => project.backendProjectId === backendProjectId,
+      )
+      return mappedDuringRequest ?? registerBackendProject(serverProject)
+    } catch (error) {
+      if (error.name !== 'AbortError' && isMounted.current) {
+        setRestoreErrors((current) => ({
+          ...current,
+          [backendProjectId]: error.message || '서버 프로젝트를 가져오지 못했습니다.',
+        }))
+      }
+      return null
+    } finally {
+      activeControllers.current.delete(controller)
+      restoreLocks.current.delete(backendProjectId)
+      if (isMounted.current) {
+        setRestoringProjectIds((current) => {
+          const next = new Set(current)
+          next.delete(backendProjectId)
+          return next
+        })
+      }
+    }
+  }
+
   return {
     projects,
     filteredProjects,
@@ -430,10 +450,18 @@ function useProjects() {
     clearSyncError: () => setSyncError(null),
     isCreating,
     isMigrating,
+    restoringProjectIds,
+    restoreErrors,
     addProject,
     updateProject,
     deleteProject,
     registerBackendProject,
+    restoreServerProject,
+    clearRestoreError: (backendProjectId) => setRestoreErrors((current) => {
+      const next = { ...current }
+      delete next[backendProjectId]
+      return next
+    }),
     migrateProjects,
   }
 }
