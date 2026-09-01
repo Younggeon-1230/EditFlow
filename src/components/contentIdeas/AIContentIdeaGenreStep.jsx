@@ -23,7 +23,7 @@ function AIContentIdeaGenreStep({
   return (
     <form className="ai-genre-step" noValidate onSubmit={handleSubmit}>
       <div className="ai-recommendation-step-heading">
-        <p className="ai-recommendation-step-label">1 / 2 · 장르 선택</p>
+        <p className="ai-recommendation-step-label">1 / 3 · 장르 선택</p>
         <h3 id="ai-genre-heading">어떤 분야의 영상을 만들고 싶나요?</h3>
         <p id="ai-genre-description">가장 가까운 장르를 고르면 다음 단계의 추천 조건에 자연스럽게 반영합니다.</p>
       </div>

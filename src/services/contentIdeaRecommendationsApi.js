@@ -54,12 +54,22 @@ function normalizeKeywords(value) {
   }, [])
 }
 
-export function composeRecommendationReferenceContext(referenceContext, genreLabel) {
+export function composeRecommendationReferenceContext(
+  referenceContext,
+  genreLabel,
+  interestLabel,
+) {
   const context = String(referenceContext ?? '').trim()
   const genre = String(genreLabel ?? '').trim()
-  if (!genre) return context
-  const genreContext = `선택한 콘텐츠 장르: ${genre}`
-  return context ? `${genreContext}\n\n사용자 추가 설명:\n${context}` : genreContext
+  const interest = String(interestLabel ?? '').trim()
+  const selectionContext = [
+    genre && `선택한 콘텐츠 장르: ${genre}`,
+    interest && `선택한 세부 관심사: ${interest}`,
+  ].filter(Boolean).join('\n')
+  if (!selectionContext) return context
+  return context
+    ? `${selectionContext}\n\n사용자 추가 설명:\n${context}`
+    : selectionContext
 }
 
 export function createRecommendationPayload(values) {
@@ -71,7 +81,11 @@ export function createRecommendationPayload(values) {
     tone: values.tone || 'informative',
     keywords: normalizeKeywords(values.keywords),
     reference_context: normalizeOptionalText(
-      composeRecommendationReferenceContext(values.referenceContext, values.genreLabel),
+      composeRecommendationReferenceContext(
+        values.referenceContext,
+        values.genreLabel,
+        values.interestLabel,
+      ),
     ),
     recommendation_count: Number(values.recommendationCount),
   }

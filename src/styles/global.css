@@ -3453,6 +3453,7 @@ a {
 .ai-genre-option-copy strong { color: #493d37; line-height: 1.35; }
 .ai-genre-option-copy > span { color: #7d7069; font-size: .82rem; line-height: 1.45; overflow-wrap: anywhere; }
 .ai-genre-selected-indicator { grid-column: 2; align-self: end; color: #a75d3e; font-size: .76rem; font-weight: 900; }
+.ai-interest-option { min-height: 112px; }
 .ai-custom-genre { display: grid; gap: 7px; min-width: 0; margin-top: 16px; }
 .ai-custom-genre input {
   width: 100%;
@@ -3466,6 +3467,20 @@ a {
 }
 .ai-custom-genre input:focus { outline: 3px solid rgb(226 148 111 / 22%); border-color: #d58d6b; }
 .ai-genre-actions { margin-top: 20px; }
+.ai-recommendation-selection-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 13px 15px;
+  border: 1px solid #e4d5cc;
+  border-radius: 13px;
+  background: #fff7f1;
+  color: #65544b;
+}
+.ai-recommendation-selection-summary strong { color: #9a573b; font-size: .78rem; }
+.ai-recommendation-selection-summary > span { font-weight: 800; }
+.ai-recommendation-selection-summary small { flex-basis: 100%; color: #81736c; }
 .ai-recommendation-form {
   padding: 22px;
   border: 1px solid #eadfd8;

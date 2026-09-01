@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { CONTENT_IDEA_RECOMMENDATION_GENRES as GENRES } from '../../constants/contentIdeas.js'
+import {
+  CONTENT_IDEA_RECOMMENDATION_GENRES as GENRES,
+  CONTENT_IDEA_RECOMMENDATION_INTERESTS as INTERESTS,
+  CONTENT_IDEA_RECOMMENDATION_INTEREST_TOPIC_PLACEHOLDERS as INTEREST_PLACEHOLDERS,
+} from '../../constants/contentIdeas.js'
 import AIContentIdeaGenreStep from './AIContentIdeaGenreStep.jsx'
+import AIContentIdeaInterestStep from './AIContentIdeaInterestStep.jsx'
 import AIContentIdeaRecommendationForm from './AIContentIdeaRecommendationForm.jsx'
 import AIContentIdeaRecommendationList from './AIContentIdeaRecommendationList.jsx'
 
@@ -23,19 +28,27 @@ function AIContentIdeaRecommendationDialog({
 }) {
   const dialogRef = useRef(null)
   const genreOptionRef = useRef(null)
+  const interestOptionRef = useRef(null)
   const topicInputRef = useRef(null)
   const closeHandlerRef = useRef(null)
   const lastValuesRef = useRef(null)
   const [step, setStep] = useState(state.recommendations.length > 0 ? 'result' : 'genre')
   const [selectedGenre, setSelectedGenre] = useState('')
   const [customGenre, setCustomGenre] = useState('')
+  const [selectedInterest, setSelectedInterest] = useState('')
+  const [customInterest, setCustomInterest] = useState('')
   const selectedGenreOption = GENRES.find((genre) => genre.value === selectedGenre)
+  const selectedInterestOption = (INTERESTS[selectedGenre] ?? [])
+    .find((interest) => interest.value === selectedInterest)
   const genreLabel = selectedGenre === 'custom'
     ? customGenre.trim()
     : selectedGenreOption?.label ?? ''
-  const topicPlaceholder = selectedGenre === 'custom' && genreLabel
-    ? `예: ${genreLabel} 분야에서 다루고 싶은 구체적인 주제`
-    : selectedGenreOption?.topicPlaceholder
+  const interestLabel = selectedInterest === 'custom'
+    ? customInterest.trim()
+    : selectedInterestOption?.label ?? ''
+  const topicPlaceholder = selectedInterest === 'custom' && interestLabel
+    ? `예: ${interestLabel}를 다루는 구체적인 콘텐츠 주제`
+    : INTEREST_PLACEHOLDERS[selectedInterest] ?? selectedGenreOption?.topicPlaceholder
 
   function requestClose() {
     if (state.hasPendingWork) {
@@ -113,8 +126,34 @@ function AIContentIdeaRecommendationDialog({
     if (response) setStep('result')
   }
 
+  function handleGenreChange(value) {
+    if (value !== selectedGenre) {
+      setSelectedInterest(value === 'custom' ? 'custom' : '')
+      setCustomInterest('')
+    }
+    setSelectedGenre(value)
+  }
+
+  function focusInterestStep() {
+    window.setTimeout(() => {
+      const selectedOption = dialogRef.current?.querySelector('input[name="ai-content-interest"]:checked')
+      const customInput = dialogRef.current?.querySelector('#ai-custom-interest-input')
+      const focusTarget = selectedOption ?? customInput ?? interestOptionRef.current
+      focusTarget?.focus()
+    }, 0)
+  }
+
+  function showInterestStep() {
+    if (!genreLabel || state.hasPendingWork) return
+    if (selectedGenre === 'custom' && selectedInterest !== 'custom') {
+      setSelectedInterest('custom')
+    }
+    setStep('interest')
+    focusInterestStep()
+  }
+
   function showRecommendationForm() {
-    if (!genreLabel) return
+    if (!genreLabel || !interestLabel) return
     setStep('form')
     window.setTimeout(() => topicInputRef.current?.focus(), 0)
   }
@@ -157,7 +196,7 @@ function AIContentIdeaRecommendationDialog({
           <button aria-label="AI 추천 창 닫기" className="icon-button" onClick={requestClose} type="button">×</button>
         </div>
 
-        {step !== 'genre' && state.generationError && (
+        {step !== 'genre' && step !== 'interest' && state.generationError && (
           <section className="ai-recommendation-error" role="alert">
             <div>
               <strong>{state.generationError.isValidation ? '추천 조건을 확인해 주세요.' : '추천을 생성하지 못했습니다.'}</strong>
@@ -168,7 +207,7 @@ function AIContentIdeaRecommendationDialog({
           </section>
         )}
 
-        {step !== 'genre' && state.recommendations.length > 0 && (
+        {step !== 'genre' && step !== 'interest' && state.recommendations.length > 0 && (
           <div className="ai-recommendation-mode-actions">
             <button aria-expanded={step === 'form'} className="secondary-button" disabled={state.hasPendingWork} onClick={toggleResultForm} type="button">
               {step === 'form' ? '추천 조건 접기' : '조건 수정·다시 추천'}
@@ -183,17 +222,32 @@ function AIContentIdeaRecommendationDialog({
             firstOptionRef={genreOptionRef}
             onCancel={requestClose}
             onCustomGenreChange={setCustomGenre}
-            onGenreChange={setSelectedGenre}
-            onNext={showRecommendationForm}
+            onGenreChange={handleGenreChange}
+            onNext={showInterestStep}
             selectedGenre={selectedGenre}
+          />
+        )}
+
+        {step === 'interest' && (
+          <AIContentIdeaInterestStep
+            customInterest={customInterest}
+            firstOptionRef={interestOptionRef}
+            genreLabel={genreLabel}
+            genreValue={selectedGenre}
+            onBack={showGenreStep}
+            onCustomInterestChange={setCustomInterest}
+            onInterestChange={setSelectedInterest}
+            onNext={showRecommendationForm}
+            selectedInterest={selectedInterest}
           />
         )}
 
         {step === 'form' && (
           <AIContentIdeaRecommendationForm
             genreLabel={genreLabel}
+            interestLabel={interestLabel}
             isGenerating={state.isGenerating}
-            onBack={showGenreStep}
+            onBack={showInterestStep}
             onGenerate={handleGenerate}
             topicInputRef={topicInputRef}
             topicPlaceholder={topicPlaceholder}

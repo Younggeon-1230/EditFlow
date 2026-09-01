@@ -92,6 +92,76 @@ export const CONTENT_IDEA_RECOMMENDATION_GENRES = [
   },
 ]
 
+export const CONTENT_IDEA_RECOMMENDATION_INTERESTS = {
+  entertainment_comedy: [
+    { value: 'entertainment_skit', label: '상황극/콩트' },
+    { value: 'entertainment_challenge', label: '챌린지' },
+    { value: 'entertainment_reaction', label: '리액션' },
+    { value: 'entertainment_talk', label: '예능형 토크' },
+    { value: 'entertainment_meme_parody', label: '밈/패러디' },
+  ],
+  vlog_lifestyle: [
+    { value: 'vlog_daily', label: '일상 브이로그' },
+    { value: 'vlog_work_school', label: '직장/학교 생활' },
+    { value: 'vlog_routine', label: '루틴' },
+    { value: 'vlog_self_care', label: '자기관리' },
+    { value: 'vlog_hobby', label: '취미 생활' },
+  ],
+  food_cooking: [
+    { value: 'food_quick_recipe', label: '간단 레시피' },
+    { value: 'food_solo_cooking', label: '자취 요리' },
+    { value: 'food_mukbang_restaurant', label: '맛집/먹방' },
+    { value: 'food_review', label: '음식 리뷰' },
+    { value: 'food_baking', label: '베이킹' },
+  ],
+  gaming: [
+    { value: 'gaming_beginner_guide', label: '게임 입문/가이드' },
+    { value: 'gaming_strategy', label: '공략' },
+    { value: 'gaming_highlight', label: '플레이 하이라이트' },
+    { value: 'gaming_review', label: '리뷰' },
+    { value: 'gaming_news', label: '게임 뉴스/정보' },
+  ],
+  beauty_fashion: [
+    { value: 'beauty_makeup', label: '메이크업' },
+    { value: 'beauty_skincare', label: '스킨케어' },
+    { value: 'fashion_outfit', label: '코디' },
+    { value: 'beauty_product_review', label: '제품 리뷰' },
+    { value: 'fashion_styling', label: '스타일링 팁' },
+  ],
+  knowledge_education: [
+    { value: 'knowledge_it', label: 'IT/기술' },
+    { value: 'knowledge_study', label: '공부/학습' },
+    { value: 'knowledge_finance', label: '경제/재테크' },
+    { value: 'knowledge_history', label: '역사/교양' },
+    { value: 'knowledge_career', label: '직무/커리어' },
+  ],
+  travel_outdoor: [
+    { value: 'travel_domestic', label: '국내 여행' },
+    { value: 'travel_overseas', label: '해외 여행' },
+    { value: 'travel_itinerary', label: '여행 코스' },
+    { value: 'travel_camping', label: '캠핑' },
+    { value: 'travel_outdoor_activity', label: '등산/아웃도어' },
+  ],
+  kids: [
+    { value: 'kids_play', label: '놀이' },
+    { value: 'kids_learning', label: '학습' },
+    { value: 'kids_crafts', label: '만들기' },
+    { value: 'kids_story', label: '동화/이야기' },
+    { value: 'kids_family', label: '가족 활동' },
+  ],
+}
+
+export const CONTENT_IDEA_RECOMMENDATION_INTEREST_TOPIC_PLACEHOLDERS = {
+  entertainment_skit: '예: 직장인이 공감하는 점심시간 상황극',
+  vlog_routine: '예: 생산성을 높이는 직장인의 아침 루틴',
+  food_solo_cooking: '예: 재료 5개로 만드는 자취생 저녁 메뉴',
+  gaming_beginner_guide: '예: 발로란트를 처음 시작하는 사람을 위한 기본 설정 가이드',
+  beauty_makeup: '예: 화장 초보자를 위한 10분 데일리 메이크업',
+  knowledge_it: '예: 비전공자가 이해하는 생성형 AI 기본 개념',
+  travel_itinerary: '예: 대중교통으로 즐기는 서울 하루 여행 코스',
+  kids_crafts: '예: 집에 있는 재료로 만드는 쉬운 종이 장난감',
+}
+
 export const CONTENT_IDEA_RECOMMENDATION_LIMITS = {
   topicMin: 2,
   topic: 200,
@@ -101,6 +171,7 @@ export const CONTENT_IDEA_RECOMMENDATION_LIMITS = {
   keyword: 50,
   referenceContext: 1500,
   customGenre: 60,
+  customInterest: 60,
   recommendationCountMin: 1,
   recommendationCountMax: 8,
 }

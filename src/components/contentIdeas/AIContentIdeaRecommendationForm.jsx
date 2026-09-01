@@ -30,7 +30,7 @@ function parseKeywords(value) {
   }, [])
 }
 
-function validate(values, genreLabel) {
+function validate(values, genreLabel, interestLabel) {
   const errors = {}
   const topic = values.topic.trim()
   const keywords = parseKeywords(values.keywords)
@@ -45,6 +45,7 @@ function validate(values, genreLabel) {
   const combinedReferenceContext = composeRecommendationReferenceContext(
     values.referenceContext,
     genreLabel,
+    interestLabel,
   )
   if (combinedReferenceContext.length > LIMITS.referenceContext) {
     errors.referenceContext = '장르 안내를 포함한 참고 내용은 1500자 이하여야 합니다.'
@@ -61,6 +62,7 @@ function FieldError({ id, children }) {
 
 function AIContentIdeaRecommendationForm({
   genreLabel,
+  interestLabel,
   isGenerating,
   onBack,
   onGenerate,
@@ -78,7 +80,7 @@ function AIContentIdeaRecommendationForm({
 
   async function handleSubmit(event) {
     event.preventDefault()
-    const result = validate(values, genreLabel)
+    const result = validate(values, genreLabel, interestLabel)
     if (Object.keys(result.errors).length) {
       setErrors(result.errors)
       return
@@ -92,6 +94,7 @@ function AIContentIdeaRecommendationForm({
       referenceContext: values.referenceContext.trim(),
       recommendationCount: Number(values.recommendationCount),
       genreLabel,
+      interestLabel,
     })
     if (!generated) setErrors((current) => ({ ...current, form: '추천을 생성하지 못했습니다. 입력한 조건은 유지됩니다.' }))
   }
@@ -99,9 +102,14 @@ function AIContentIdeaRecommendationForm({
   return (
     <form aria-labelledby="ai-recommendation-form-heading" className="idea-form ai-recommendation-form" noValidate onSubmit={handleSubmit}>
       <div className="ai-recommendation-step-heading">
-        <p className="ai-recommendation-step-label">2 / 2 · 추천 조건</p>
-        <h3 id="ai-recommendation-form-heading">{genreLabel} 콘텐츠의 구체적인 주제를 알려주세요.</h3>
-        <p>선택한 장르는 추천 맥락에 자동으로 포함되며 저장되는 소재 정보에는 추가되지 않습니다.</p>
+        <p className="ai-recommendation-step-label">3 / 3 · 추천 조건</p>
+        <h3 id="ai-recommendation-form-heading">구체적인 콘텐츠 주제를 알려주세요.</h3>
+        <p>선택한 장르와 관심사를 바탕으로 필요한 조건만 더해 주세요.</p>
+      </div>
+      <div aria-label={`선택한 콘텐츠 분야: ${genreLabel}, ${interestLabel}`} className="ai-recommendation-selection-summary">
+        <strong>선택</strong>
+        <span>{genreLabel}<span aria-hidden="true"> · </span>{interestLabel}</span>
+        <small>이 정보는 AI 추천 생성 시 함께 반영됩니다.</small>
       </div>
       {errors.form && <p className="idea-form-error" role="alert">{errors.form}</p>}
       <label htmlFor="ai-recommendation-topic">
