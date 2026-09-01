@@ -54,6 +54,14 @@ function normalizeKeywords(value) {
   }, [])
 }
 
+export function composeRecommendationReferenceContext(referenceContext, genreLabel) {
+  const context = String(referenceContext ?? '').trim()
+  const genre = String(genreLabel ?? '').trim()
+  if (!genre) return context
+  const genreContext = `선택한 콘텐츠 장르: ${genre}`
+  return context ? `${genreContext}\n\n사용자 추가 설명:\n${context}` : genreContext
+}
+
 export function createRecommendationPayload(values) {
   return {
     topic: String(values.topic ?? '').trim(),
@@ -62,7 +70,9 @@ export function createRecommendationPayload(values) {
     content_format: normalizeOptionalText(values.contentFormat),
     tone: values.tone || 'informative',
     keywords: normalizeKeywords(values.keywords),
-    reference_context: normalizeOptionalText(values.referenceContext),
+    reference_context: normalizeOptionalText(
+      composeRecommendationReferenceContext(values.referenceContext, values.genreLabel),
+    ),
     recommendation_count: Number(values.recommendationCount),
   }
 }

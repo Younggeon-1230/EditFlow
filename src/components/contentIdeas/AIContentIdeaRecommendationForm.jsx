@@ -4,6 +4,7 @@ import {
   CONTENT_IDEA_RECOMMENDATION_LIMITS as LIMITS,
   CONTENT_IDEA_RECOMMENDATION_TONES,
 } from '../../constants/contentIdeas.js'
+import { composeRecommendationReferenceContext } from '../../services/contentIdeaRecommendationsApi.js'
 
 const INITIAL_VALUES = {
   topic: '',
@@ -29,7 +30,7 @@ function parseKeywords(value) {
   }, [])
 }
 
-function validate(values) {
+function validate(values, genreLabel) {
   const errors = {}
   const topic = values.topic.trim()
   const keywords = parseKeywords(values.keywords)
@@ -41,7 +42,13 @@ function validate(values) {
   if (values.contentFormat.trim().length > LIMITS.contentFormat) errors.contentFormat = '콘텐츠 형식은 100자 이하여야 합니다.'
   if (keywords.length > LIMITS.keywords) errors.keywords = '키워드는 최대 10개까지 입력할 수 있습니다.'
   else if (keywords.some((keyword) => keyword.length > LIMITS.keyword)) errors.keywords = '키워드는 각각 50자 이하여야 합니다.'
-  if (values.referenceContext.trim().length > LIMITS.referenceContext) errors.referenceContext = '참고 내용은 1500자 이하여야 합니다.'
+  const combinedReferenceContext = composeRecommendationReferenceContext(
+    values.referenceContext,
+    genreLabel,
+  )
+  if (combinedReferenceContext.length > LIMITS.referenceContext) {
+    errors.referenceContext = '장르 안내를 포함한 참고 내용은 1500자 이하여야 합니다.'
+  }
   if (!Number.isInteger(count) || count < LIMITS.recommendationCountMin || count > LIMITS.recommendationCountMax) {
     errors.recommendationCount = '추천 개수는 1~8 사이의 정수여야 합니다.'
   }
@@ -52,7 +59,14 @@ function FieldError({ id, children }) {
   return children ? <small className="idea-field-error" id={id} role="alert">{children}</small> : null
 }
 
-function AIContentIdeaRecommendationForm({ isGenerating, onGenerate, topicInputRef }) {
+function AIContentIdeaRecommendationForm({
+  genreLabel,
+  isGenerating,
+  onBack,
+  onGenerate,
+  topicInputRef,
+  topicPlaceholder,
+}) {
   const [values, setValues] = useState(INITIAL_VALUES)
   const [errors, setErrors] = useState({})
 
@@ -64,7 +78,7 @@ function AIContentIdeaRecommendationForm({ isGenerating, onGenerate, topicInputR
 
   async function handleSubmit(event) {
     event.preventDefault()
-    const result = validate(values)
+    const result = validate(values, genreLabel)
     if (Object.keys(result.errors).length) {
       setErrors(result.errors)
       return
@@ -77,12 +91,18 @@ function AIContentIdeaRecommendationForm({ isGenerating, onGenerate, topicInputR
       keywords: result.keywords,
       referenceContext: values.referenceContext.trim(),
       recommendationCount: Number(values.recommendationCount),
+      genreLabel,
     })
     if (!generated) setErrors((current) => ({ ...current, form: '추천을 생성하지 못했습니다. 입력한 조건은 유지됩니다.' }))
   }
 
   return (
-    <form className="idea-form ai-recommendation-form" noValidate onSubmit={handleSubmit}>
+    <form aria-labelledby="ai-recommendation-form-heading" className="idea-form ai-recommendation-form" noValidate onSubmit={handleSubmit}>
+      <div className="ai-recommendation-step-heading">
+        <p className="ai-recommendation-step-label">2 / 2 · 추천 조건</p>
+        <h3 id="ai-recommendation-form-heading">{genreLabel} 콘텐츠의 구체적인 주제를 알려주세요.</h3>
+        <p>선택한 장르는 추천 맥락에 자동으로 포함되며 저장되는 소재 정보에는 추가되지 않습니다.</p>
+      </div>
       {errors.form && <p className="idea-form-error" role="alert">{errors.form}</p>}
       <label htmlFor="ai-recommendation-topic">
         <span>추천 주제 *</span>
@@ -93,7 +113,7 @@ function AIContentIdeaRecommendationForm({ isGenerating, onGenerate, topicInputR
           maxLength={LIMITS.topic + 1}
           name="topic"
           onChange={handleChange}
-          placeholder="예: 초보자를 위한 스마트폰 영상 편집"
+          placeholder={topicPlaceholder || '예: 초보자를 위한 스마트폰 영상 편집'}
           ref={topicInputRef}
           value={values.topic}
         />
@@ -146,6 +166,7 @@ function AIContentIdeaRecommendationForm({ isGenerating, onGenerate, topicInputR
       </label>
 
       <div className="idea-form-actions">
+        <button className="secondary-button" disabled={isGenerating} onClick={onBack} type="button">이전</button>
         <button className="primary-button ai-generate-button" disabled={isGenerating} type="submit">
           {isGenerating ? 'AI가 소재를 만드는 중…' : 'AI 소재 추천받기'}
         </button>

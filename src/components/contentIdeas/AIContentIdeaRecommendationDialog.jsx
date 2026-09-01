@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { CONTENT_IDEA_RECOMMENDATION_GENRES as GENRES } from '../../constants/contentIdeas.js'
+import AIContentIdeaGenreStep from './AIContentIdeaGenreStep.jsx'
 import AIContentIdeaRecommendationForm from './AIContentIdeaRecommendationForm.jsx'
 import AIContentIdeaRecommendationList from './AIContentIdeaRecommendationList.jsx'
 
@@ -20,10 +22,20 @@ function AIContentIdeaRecommendationDialog({
   onSaveSelected,
 }) {
   const dialogRef = useRef(null)
+  const genreOptionRef = useRef(null)
   const topicInputRef = useRef(null)
   const closeHandlerRef = useRef(null)
   const lastValuesRef = useRef(null)
-  const [showForm, setShowForm] = useState(state.recommendations.length === 0)
+  const [step, setStep] = useState(state.recommendations.length > 0 ? 'result' : 'genre')
+  const [selectedGenre, setSelectedGenre] = useState('')
+  const [customGenre, setCustomGenre] = useState('')
+  const selectedGenreOption = GENRES.find((genre) => genre.value === selectedGenre)
+  const genreLabel = selectedGenre === 'custom'
+    ? customGenre.trim()
+    : selectedGenreOption?.label ?? ''
+  const topicPlaceholder = selectedGenre === 'custom' && genreLabel
+    ? `예: ${genreLabel} 분야에서 다루고 싶은 구체적인 주제`
+    : selectedGenreOption?.topicPlaceholder
 
   function requestClose() {
     if (state.hasPendingWork) {
@@ -37,7 +49,9 @@ function AIContentIdeaRecommendationDialog({
 
   useEffect(() => {
     const previouslyFocused = document.activeElement
-    const focusTimer = window.setTimeout(() => topicInputRef.current?.focus(), 0)
+    const previousBodyOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusTimer = window.setTimeout(() => genreOptionRef.current?.focus(), 0)
 
     function handleKeyDown(event) {
       if (event.key === 'Escape') {
@@ -72,6 +86,7 @@ function AIContentIdeaRecommendationDialog({
     return () => {
       window.clearTimeout(focusTimer)
       document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = previousBodyOverflow
       const returnTarget = triggerRef?.current ?? previouslyFocused
       window.setTimeout(() => returnTarget?.focus(), 0)
     }
@@ -82,7 +97,7 @@ function AIContentIdeaRecommendationDialog({
     lastValuesRef.current = values
     const response = await onGenerate(values)
     if (response) {
-      setShowForm(false)
+      setStep('result')
       window.setTimeout(() => dialogRef.current?.focus(), 0)
     }
     return response
@@ -90,12 +105,34 @@ function AIContentIdeaRecommendationDialog({
 
   async function retryGeneration() {
     if (!lastValuesRef.current) {
-      setShowForm(true)
-      topicInputRef.current?.focus()
+      setStep('form')
+      window.setTimeout(() => topicInputRef.current?.focus(), 0)
       return
     }
     const response = await handleGenerate(lastValuesRef.current)
-    if (response) setShowForm(false)
+    if (response) setStep('result')
+  }
+
+  function showRecommendationForm() {
+    if (!genreLabel) return
+    setStep('form')
+    window.setTimeout(() => topicInputRef.current?.focus(), 0)
+  }
+
+  function showGenreStep() {
+    if (state.hasPendingWork) return
+    setStep('genre')
+    window.setTimeout(() => {
+      const selectedOption = dialogRef.current?.querySelector('input[name="ai-content-genre"]:checked')
+      const focusTarget = selectedOption ?? genreOptionRef.current
+      focusTarget?.focus()
+    }, 0)
+  }
+
+  function toggleResultForm() {
+    const nextStep = step === 'form' ? 'result' : 'form'
+    setStep(nextStep)
+    if (nextStep === 'form') window.setTimeout(() => topicInputRef.current?.focus(), 0)
   }
 
   return (
@@ -120,7 +157,7 @@ function AIContentIdeaRecommendationDialog({
           <button aria-label="AI 추천 창 닫기" className="icon-button" onClick={requestClose} type="button">×</button>
         </div>
 
-        {state.generationError && (
+        {step !== 'genre' && state.generationError && (
           <section className="ai-recommendation-error" role="alert">
             <div>
               <strong>{state.generationError.isValidation ? '추천 조건을 확인해 주세요.' : '추천을 생성하지 못했습니다.'}</strong>
@@ -131,17 +168,36 @@ function AIContentIdeaRecommendationDialog({
           </section>
         )}
 
-        {state.recommendations.length > 0 && (
+        {step !== 'genre' && state.recommendations.length > 0 && (
           <div className="ai-recommendation-mode-actions">
-            <button aria-expanded={showForm} className="secondary-button" disabled={state.hasPendingWork} onClick={() => { setShowForm((current) => !current); if (!showForm) window.setTimeout(() => topicInputRef.current?.focus(), 0) }} type="button">
-              {showForm ? '추천 조건 접기' : '조건 수정·다시 추천'}
+            <button aria-expanded={step === 'form'} className="secondary-button" disabled={state.hasPendingWork} onClick={toggleResultForm} type="button">
+              {step === 'form' ? '추천 조건 접기' : '조건 수정·다시 추천'}
             </button>
             <span aria-live="polite">{state.isGenerating ? '새 추천을 생성하고 있습니다.' : `요청 ID ${state.responseMeta?.requestId ?? '–'}`}</span>
           </div>
         )}
 
-        {(showForm || state.recommendations.length === 0) && (
-          <AIContentIdeaRecommendationForm isGenerating={state.isGenerating} onGenerate={handleGenerate} topicInputRef={topicInputRef} />
+        {step === 'genre' && (
+          <AIContentIdeaGenreStep
+            customGenre={customGenre}
+            firstOptionRef={genreOptionRef}
+            onCancel={requestClose}
+            onCustomGenreChange={setCustomGenre}
+            onGenreChange={setSelectedGenre}
+            onNext={showRecommendationForm}
+            selectedGenre={selectedGenre}
+          />
+        )}
+
+        {step === 'form' && (
+          <AIContentIdeaRecommendationForm
+            genreLabel={genreLabel}
+            isGenerating={state.isGenerating}
+            onBack={showGenreStep}
+            onGenerate={handleGenerate}
+            topicInputRef={topicInputRef}
+            topicPlaceholder={topicPlaceholder}
+          />
         )}
 
         {state.isGenerating && <div aria-live="polite" className="ai-recommendation-loading" role="status"><span aria-hidden="true" />AI가 추천 소재를 구성하고 있습니다. 창을 닫으면 요청이 취소됩니다.</div>}
