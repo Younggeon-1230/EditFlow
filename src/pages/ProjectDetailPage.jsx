@@ -4,6 +4,7 @@ import BrollPanel from '../components/projectDetail/BrollPanel'
 import ChecklistMemoPanel from '../components/projectDetail/ChecklistMemoPanel'
 import ProjectInfo from '../components/projectDetail/ProjectInfo'
 import ProjectMemoPanel from '../components/projectDetail/ProjectMemoPanel'
+import ProjectSourceIdea from '../components/projectDetail/ProjectSourceIdea.jsx'
 import ProjectStatusDialog, {
   STATUS_OPTIONS,
 } from '../components/projectDetail/ProjectStatusDialog'
@@ -16,6 +17,7 @@ import projectDetailSamples from '../data/projectDetailSamples'
 import useChecklist from '../hooks/useChecklist'
 import useProjects from '../hooks/useProjects'
 import useProjectMemos from '../hooks/useProjectMemos'
+import useProjectSourceContentIdea from '../hooks/useProjectSourceContentIdea.js'
 import useSavedBrolls from '../hooks/useSavedBrolls'
 import useSavedReferences from '../hooks/useSavedReferences'
 
@@ -47,6 +49,7 @@ function ProjectDetailPage() {
   )
   const savedReferences = useSavedReferences(project?.backendProjectId ?? null)
   const savedBrolls = useSavedBrolls(project?.backendProjectId ?? null)
+  const sourceIdea = useProjectSourceContentIdea(project?.backendProjectId ?? null)
 
   useEffect(() => {
     setIsEditOpen(false)
@@ -202,6 +205,7 @@ function ProjectDetailPage() {
         }}
         project={project}
       />
+      <ProjectSourceIdea project={project} relation={sourceIdea} />
       <ProjectTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       <section

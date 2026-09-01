@@ -12,6 +12,7 @@ import unicodedata
 from collections import OrderedDict, defaultdict, deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from datetime import date
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -45,6 +46,10 @@ from app.schemas.content_idea_recommendation import (
     RecommendationTokenPayload,
 )
 from app.services.content_ideas import create_content_idea_with_source
+from app.services.recommendation_temporal import (
+    build_temporal_context,
+    get_current_date,
+)
 
 
 @dataclass(frozen=True)
@@ -167,8 +172,11 @@ recommendation_runtime_state = RecommendationRuntimeState()
 
 def build_recommendation_prompt(
     request: ContentIdeaRecommendationRequest,
+    *,
+    current_date: date | None = None,
 ) -> RecommendationPrompt:
     user_data = request.model_dump(mode="json")
+    temporal = build_temporal_context(current_date or get_current_date())
     system = (
         "당신은 영상 콘텐츠 소재 기획 보조자입니다. 한국어로 실용적이고 서로 구별되는 아이디어를 "
         "제안하세요. 실시간 조회를 했다고 주장하거나 존재 여부, 성과 수치, 예산, 출처를 "
@@ -180,7 +188,24 @@ def build_recommendation_prompt(
         "platform은 youtube, shorts, instagram, tiktok, blog, other 중 하나여야 합니다. "
         "title 200자, description 5000자, tag 각 50자와 최대 10개, target_audience 500자, "
         "content_format 100자, reason 500자 제한을 지키세요. 관점이나 형식을 서로 다르게 하고 "
-        "같은 제목을 반복하지 마세요. reason에는 사용자 입력과 추천의 연결 근거만 설명하세요."
+        "같은 제목을 반복하지 마세요. reason에는 사용자 입력과 추천의 연결 근거만 설명하세요. "
+        f"서버 기준 시간 맥락은 현재 날짜 {temporal.current_date.isoformat()}, "
+        f"현재 연도 {temporal.year}년, 현재 월 {temporal.month}월, "
+        f"현재 계절 {temporal.season}입니다. 추천은 어느 시점에도 활용 가능한 evergreen 소재를 "
+        "중심으로 구성하고, 현재 시점과 사용자 장르·관심사가 자연스럽게 연결될 때만 일부를 "
+        "계절성 또는 시기성 소재로 제안하세요. 추천이 5개라면 보통 3~4개는 evergreen, "
+        "1~2개 정도만 시기성 소재로 고려하되, 개수가 적거나 사용자가 특정 시기를 요구하면 "
+        "유연하게 조정하고 계절성을 억지로 넣지 마세요. 장르별로 엔터테인먼트는 계절 행사·"
+        "휴가철·연말·학교나 직장 시기, 브이로그는 개강·방학·휴가·계절 루틴·연말과 새해, "
+        "먹방·요리는 제철 식재료·계절 및 명절 음식, 게임은 일반적인 계절 연결이 자연스러울 "
+        "때만, 뷰티·패션은 계절 의류·피부관리·메이크업, 지식·교육은 해당 월과 연관된 역사·"
+        "과학·사회·교육 소재, 여행·아웃도어는 계절 여행·캠핑·등산·휴가·단풍·겨울 활동, "
+        "키즈는 방학·어린이날·계절 놀이·학교 일정·연말 행사를 참고할 수 있습니다. 외부 검색이나 "
+        "실시간 데이터가 없으므로 최신 뉴스·현재 진행 중인 이벤트·올해 새로 발생한 사실을 안다고 "
+        "가정하거나 단정하지 마세요. 역사적 사건의 날짜와 사실을 추측하거나 만들지 말고, 확신할 수 "
+        "없으면 정확한 날짜를 제거해 일반적인 소재로 표현하세요. 검색량·증가율·트렌드 수치를 "
+        "지어내지 말고, 시기성 추천의 reason에는 검증되지 않은 수치 없이 왜 현재 계절이나 월과 "
+        "어울리는지만 설명하세요."
     )
     user = json.dumps(
         {"untrusted_user_input": user_data},
@@ -213,6 +238,7 @@ async def generate_recommendations(
     monotonic: Callable[[], float] = time.monotonic,
     sleeper: Callable[[float], Awaitable[None]] | None = None,
     jitter: Callable[[], float] | None = None,
+    date_provider: Callable[[], date] | None = None,
 ) -> ContentIdeaRecommendationResponse:
     _validate_generation_settings(settings)
     if request.recommendation_count > settings.llm_max_recommendations:
@@ -225,7 +251,10 @@ async def generate_recommendations(
         settings.llm_rate_limit_window_seconds,
     )
     try:
-        prompt = build_recommendation_prompt(request)
+        prompt = build_recommendation_prompt(
+            request,
+            current_date=(date_provider or get_current_date)(),
+        )
         raw_items = await _call_provider(
             provider,
             prompt,

@@ -8,7 +8,9 @@ from app.models.project_memo import ProjectMemo
 from app.models.saved_broll import SavedBroll
 from app.models.saved_reference import SavedReference
 from app.models.user import utc_now
+from app.schemas.content_idea import ContentIdeaRead
 from app.schemas.project import ProjectCreate, ProjectRead, ProjectUpdate
+from app.services.content_ideas import to_content_idea_read
 
 
 def _project_summary_statement(user_id: int, project_id: int | None = None):
@@ -116,6 +118,20 @@ def get_project(session: Session, user_id: int, project_id: int) -> Project | No
         Project.user_id == user_id,
     )
     return session.exec(statement).one_or_none()
+
+
+def get_source_content_idea(
+    session: Session,
+    user_id: int,
+    project_id: int,
+) -> ContentIdeaRead | None:
+    idea = session.exec(
+        select(ContentIdea).where(
+            ContentIdea.user_id == user_id,
+            ContentIdea.converted_project_id == project_id,
+        )
+    ).one_or_none()
+    return to_content_idea_read(idea) if idea is not None else None
 
 
 def update_project(

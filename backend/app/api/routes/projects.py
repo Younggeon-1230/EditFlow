@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.api.dependencies import DevelopmentUserDependency, SessionDependency
 from app.models.project import Project
+from app.schemas.content_idea import ContentIdeaRead
 from app.schemas.project import ProjectCreate, ProjectRead, ProjectUpdate
 from app.services import projects as project_service
 
@@ -60,6 +61,24 @@ def read_project(
     summary = project_service.get_project_summary(session, user.id, project.id)
     assert summary is not None
     return summary
+
+
+@router.get(
+    "/{project_id}/source-content-idea",
+    response_model=ContentIdeaRead | None,
+)
+def read_project_source_content_idea(
+    session: SessionDependency,
+    user: DevelopmentUserDependency,
+    project: OwnedProjectDependency,
+) -> ContentIdeaRead | None:
+    assert user.id is not None
+    assert project.id is not None
+    return project_service.get_source_content_idea(
+        session,
+        user.id,
+        project.id,
+    )
 
 
 @router.patch("/{project_id}", response_model=ProjectRead)

@@ -168,13 +168,83 @@ def test_deleting_converted_project_restores_idea_and_allows_reconversion(
     assert first.status_code == 201
 
     project_id = first.json()["project"]["id"]
+    assert client.get(
+        f"/api/projects/{project_id}/source-content-idea"
+    ).status_code == 200
     assert client.delete(f"/api/projects/{project_id}").status_code == 204
+    assert client.get(
+        f"/api/projects/{project_id}/source-content-idea"
+    ).status_code == 404
 
     restored = client.get(f"/api/content-ideas/{idea['id']}").json()
     assert restored["converted_project_id"] is None
     assert restored["status"] == "ready"
     assert client.get(f"/api/content-ideas/{unaffected['id']}").json()["status"] == "researching"
     assert convert(client, idea["id"], title="Converted again").status_code == 201
+
+
+def test_project_source_content_idea_returns_linked_idea(
+    client: TestClient,
+) -> None:
+    idea = create_idea(client)
+    converted = convert(client, idea["id"]).json()
+
+    response = client.get(
+        f"/api/projects/{converted['project']['id']}/source-content-idea"
+    )
+
+    assert response.status_code == 200
+    source_idea = response.json()
+    assert source_idea["id"] == idea["id"]
+    assert source_idea["title"] == idea["title"]
+    assert source_idea["status"] == "converted"
+    assert source_idea["converted_project_id"] == converted["project"]["id"]
+
+
+def test_project_source_content_idea_returns_null_for_unlinked_project(
+    client: TestClient,
+) -> None:
+    project = client.post("/api/projects", json={"title": "Standalone"}).json()
+
+    response = client.get(
+        f"/api/projects/{project['id']}/source-content-idea"
+    )
+
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+def test_project_source_content_idea_returns_404_for_missing_project(
+    client: TestClient,
+) -> None:
+    response = client.get(
+        "/api/projects/999999/source-content-idea"
+    )
+
+    assert response.status_code == 404
+
+
+def test_project_source_content_idea_hides_other_users_project(
+    client: TestClient,
+    test_engine: Engine,
+) -> None:
+    with Session(test_engine) as session:
+        other = User(email="source-idea-owner@editflow.local")
+        session.add(other)
+        session.commit()
+        session.refresh(other)
+        project = Project(user_id=other.id, title="Private project")
+        session.add(project)
+        session.commit()
+        session.refresh(project)
+        project_id = project.id
+
+    assert project_id is not None
+    response = client.get(
+        f"/api/projects/{project_id}/source-content-idea"
+    )
+
+    assert response.status_code == 404
 
 
 def test_commit_failure_rolls_back_project_and_idea(

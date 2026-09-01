@@ -6,6 +6,7 @@ export const ROUTES = {
   projectDetail: '/projects/:projectId',
   checklist: '/checklist',
   ideas: '/ideas',
+  ideaDetail: '/ideas/:ideaId',
 }
 
 export const STORAGE_KEYS = {

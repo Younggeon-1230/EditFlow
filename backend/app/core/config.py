@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     llm_max_recommendations: int = Field(default=8, ge=1, le=8)
     llm_default_recommendations: int = Field(default=5, ge=1, le=8)
     llm_max_output_tokens: int = Field(default=3000, ge=256)
-    llm_prompt_version: str = "v1"
+    llm_prompt_version: str = "v2"
     llm_recommendation_signing_secret: str | None = None
     llm_recommendation_token_ttl_seconds: int = Field(default=900, ge=1)
     llm_rate_limit_requests: int = Field(default=5, ge=1)

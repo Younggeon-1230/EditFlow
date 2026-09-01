@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Generator
+from datetime import date
 from types import SimpleNamespace
 from typing import Any
 from uuid import uuid4
@@ -82,6 +83,7 @@ def configured_recommendations() -> Generator[StubProvider, None, None]:
     settings = Settings(
         llm_live_calls_enabled=True,
         llm_api_key="test-key",
+        llm_prompt_version="v2",
         llm_recommendation_signing_secret=SECRET,
     )
     app.dependency_overrides[get_settings] = lambda: settings
@@ -123,7 +125,7 @@ def test_generate_normalizes_partial_results_and_does_not_write_db(
     assert data["requested_count"] == 3
     assert data["generated_count"] == 2
     assert data["discarded_count"] == 2
-    assert data["prompt_version"] == "v1"
+    assert data["prompt_version"] == "v2"
     assert data["recommendations"][0]["source"] == "ai"
     assert data["recommendations"][0]["duplicate_warning"] is True
     assert data["recommendations"][0]["tags"] == ["AI", "기획"]
@@ -210,6 +212,25 @@ def test_recommendation_input_boundaries_and_defaults(
     prompt_payload = configured_recommendations.prompts[-1].user
     assert f'"recommendation_count":{expected_count}' in prompt_payload
     assert '"tone":"informative"' in prompt_payload
+
+
+def test_generation_uses_injected_server_date_context(
+    client: TestClient,
+    configured_recommendations: StubProvider,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "app.services.content_idea_recommendations.get_current_date",
+        lambda: date(2026, 12, 20),
+    )
+
+    response = post_recommendations(client)
+
+    assert response.status_code == 200
+    developer_prompt = configured_recommendations.prompts[-1].developer
+    assert "현재 날짜 2026-12-20" in developer_prompt
+    assert "현재 월 12월" in developer_prompt
+    assert "현재 계절 겨울" in developer_prompt
 
 
 def test_static_routes_do_not_collide_with_idea_id(

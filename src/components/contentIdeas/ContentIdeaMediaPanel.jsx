@@ -6,10 +6,10 @@ import useContentIdeaReferences from '../../hooks/useContentIdeaReferences.js'
 import useContentIdeaBrolls from '../../hooks/useContentIdeaBrolls.js'
 import { ROUTES } from '../../constants/app.js'
 
-function ContentIdeaMediaPanel({ idea, onMediaChanged }) {
+function ContentIdeaMediaPanel({ idea, loadAll = false, onMediaChanged }) {
   const [activeTab, setActiveTab] = useState('references')
-  const references = useContentIdeaReferences(idea.id, activeTab === 'references')
-  const brolls = useContentIdeaBrolls(idea.id, activeTab === 'brolls')
+  const references = useContentIdeaReferences(idea.id, loadAll || activeTab === 'references')
+  const brolls = useContentIdeaBrolls(idea.id, loadAll || activeTab === 'brolls')
   const media = activeTab === 'references' ? references : brolls
   const searchPath = activeTab === 'references' ? ROUTES.reference : ROUTES.broll
   const searchLabel = activeTab === 'references' ? '레퍼런스 검색' : 'B-roll 검색'
@@ -22,8 +22,8 @@ function ContentIdeaMediaPanel({ idea, onMediaChanged }) {
   return (
     <section className="idea-media-panel" aria-label={`${idea.title} 연결 자료`}>
       <div className="idea-media-tabs" role="tablist" aria-label="연결 자료 종류">
-        <button aria-selected={activeTab === 'references'} className={activeTab === 'references' ? 'active' : ''} onClick={() => setActiveTab('references')} role="tab" type="button">Reference {references.items.length > 0 && `(${references.items.length})`}</button>
-        <button aria-selected={activeTab === 'brolls'} className={activeTab === 'brolls' ? 'active' : ''} onClick={() => setActiveTab('brolls')} role="tab" type="button">B-roll {brolls.items.length > 0 && `(${brolls.items.length})`}</button>
+        <button aria-selected={activeTab === 'references'} className={activeTab === 'references' ? 'active' : ''} onClick={() => setActiveTab('references')} role="tab" type="button">Reference {loadAll || references.items.length > 0 ? `(${references.items.length})` : ''}</button>
+        <button aria-selected={activeTab === 'brolls'} className={activeTab === 'brolls' ? 'active' : ''} onClick={() => setActiveTab('brolls')} role="tab" type="button">B-roll {loadAll || brolls.items.length > 0 ? `(${brolls.items.length})` : ''}</button>
       </div>
 
       {idea.status === 'converted' && <p className="idea-media-independence">이곳의 변경 사항은 이미 생성된 프로젝트의 저장 자료에 자동 반영되지 않습니다.</p>}

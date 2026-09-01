@@ -36,6 +36,7 @@ function ContentIdeaCard({ idea, onEdit, onDelete, onConvert, onMediaChanged, lo
       </dl>
       {(idea.status === 'converted' || idea.convertedProjectId) && <p className="idea-converted-note">프로젝트 전환 완료</p>}
       <div className="idea-card-actions">
+        <Link className="secondary-button link-button" to={generatePath(ROUTES.ideaDetail, { ideaId: idea.id })}>상세 보기</Link>
         {canConvert && <button className="primary-button idea-convert-button" disabled={disabled} onClick={() => onConvert(idea)} type="button">{isConverting ? '전환 중…' : '프로젝트로 전환'}</button>}
         {idea.status === 'archived' && !idea.convertedProjectId && <button className="secondary-button" disabled title="보관된 소재는 전환할 수 없습니다." type="button">전환 불가</button>}
         {localProjectId && <Link className="secondary-button link-button" to={generatePath(ROUTES.projectDetail, { projectId: localProjectId })}>프로젝트 보기</Link>}
