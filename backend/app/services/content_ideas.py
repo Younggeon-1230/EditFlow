@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import case, delete, exists, func, or_
@@ -14,6 +15,8 @@ from app.models.content_idea import (
 )
 from app.models.content_idea_broll import ContentIdeaBroll
 from app.models.content_idea_reference import ContentIdeaReference
+from app.models.checklist_item import ChecklistItem
+from app.models.project_memo import ProjectMemo
 from app.models.user import utc_now
 from app.models.project import Project
 from app.models.saved_broll import SavedBroll
@@ -41,6 +44,55 @@ class ContentIdeaConversionConflictError(Exception):
     def __init__(self, reason: str) -> None:
         super().__init__(reason)
         self.reason = reason
+
+
+def _load_default_checklist_template() -> tuple[dict[str, Any], ...]:
+    template_path = Path(__file__).resolve().parents[3] / "shared" / "default-checklist.json"
+    with template_path.open(encoding="utf-8") as template_file:
+        items = json.load(template_file)
+    return tuple(items)
+
+
+DEFAULT_CHECKLIST_TEMPLATE = _load_default_checklist_template()
+
+
+def _add_default_checklist_items(
+    session: Session,
+    project_id: int,
+) -> list[ChecklistItem]:
+    items = [
+        ChecklistItem(
+            project_id=project_id,
+            title=template_item["text"],
+            description=None,
+            is_completed=template_item["done"],
+            position=position,
+        )
+        for position, template_item in enumerate(DEFAULT_CHECKLIST_TEMPLATE)
+    ]
+    session.add_all(items)
+    return items
+
+
+def _add_initial_memo(
+    session: Session,
+    project_id: int,
+    content: str,
+) -> ProjectMemo:
+    memo = ProjectMemo(project_id=project_id, content=content, position=0)
+    session.add(memo)
+    return memo
+
+
+def _link_content_idea_to_project(
+    session: Session,
+    idea: ContentIdea,
+    project_id: int,
+) -> None:
+    idea.status = ContentIdeaStatus.CONVERTED
+    idea.converted_project_id = project_id
+    idea.updated_at = utc_now()
+    session.add(idea)
 
 
 def normalize_tags(tags: Any) -> Any:
@@ -318,7 +370,9 @@ def convert_content_idea_to_project(
     if idea.status == ContentIdeaStatus.ARCHIVED:
         raise ContentIdeaConversionConflictError("archived")
 
-    project_data = data.model_dump()
+    project_data = data.model_dump(
+        exclude={"create_default_checklist", "initial_memo"}
+    )
     if project_data.get("description") == "":
         project_data["description"] = None
     project = Project(user_id=user_id, client_name=None, **project_data)
@@ -370,10 +424,14 @@ def convert_content_idea_to_project(
                     note=broll.note,
                 )
             )
-        idea.status = ContentIdeaStatus.CONVERTED
-        idea.converted_project_id = project.id
-        idea.updated_at = utc_now()
-        session.add(idea)
+        checklist_items = (
+            _add_default_checklist_items(session, project.id)
+            if data.create_default_checklist
+            else []
+        )
+        if data.initial_memo is not None:
+            _add_initial_memo(session, project.id, data.initial_memo)
+        _link_content_idea_to_project(session, idea, project.id)
         session.commit()
         session.refresh(project)
         session.refresh(idea)
@@ -387,8 +445,10 @@ def convert_content_idea_to_project(
                 **project.model_dump(),
                 "reference_count": len(idea_references),
                 "broll_count": len(idea_brolls),
-                "checklist_total": 0,
-                "checklist_completed": 0,
+                "checklist_total": len(checklist_items),
+                "checklist_completed": sum(
+                    item.is_completed for item in checklist_items
+                ),
             }
         ),
         to_content_idea_read(idea),

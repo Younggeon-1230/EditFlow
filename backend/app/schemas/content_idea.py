@@ -151,6 +151,8 @@ class ContentIdeaConversionCreate(SQLModel):
     description: str | None = Field(default=None, max_length=5000)
     status: ProjectStatus = ProjectStatus.PLANNING
     due_date: date | None = None
+    create_default_checklist: bool = False
+    initial_memo: str | None = Field(default=None, min_length=1, max_length=5000)
 
 
 class ContentIdeaConversionRead(SQLModel):
