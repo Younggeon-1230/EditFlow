@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any, Self
 
-from pydantic import ConfigDict, field_validator, model_validator
+from pydantic import ConfigDict, StrictInt, field_validator, model_validator
 from sqlmodel import Field, SQLModel
 
 from app.models.content_idea import (
@@ -153,6 +153,22 @@ class ContentIdeaConversionCreate(SQLModel):
     due_date: date | None = None
     create_default_checklist: bool = False
     initial_memo: str | None = Field(default=None, min_length=1, max_length=5000)
+    selected_reference_ids: list[StrictInt] | None = None
+    selected_broll_ids: list[StrictInt] | None = None
+
+    @field_validator("selected_reference_ids", "selected_broll_ids")
+    @classmethod
+    def validate_selected_media_ids(
+        cls,
+        value: list[int] | None,
+    ) -> list[int] | None:
+        if value is None:
+            return None
+        if any(media_id <= 0 for media_id in value):
+            raise ValueError("Selected media IDs must be positive integers")
+        if len(value) != len(set(value)):
+            raise ValueError("Selected media IDs must not contain duplicates")
+        return value
 
 
 class ContentIdeaConversionRead(SQLModel):

@@ -239,6 +239,14 @@ def convert_content_idea_to_project(
             else "이미 프로젝트로 전환된 콘텐츠 소재입니다."
         )
         raise HTTPException(status_code=409, detail=message) from error
+    except content_idea_service.ContentIdeaMediaSelectionError as error:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "선택한 자료 중 일부가 더 이상 존재하지 않습니다. "
+                "자료 목록을 새로고침한 뒤 다시 선택해 주세요."
+            ),
+        ) from error
     return ContentIdeaConversionRead(project=project, content_idea=idea)
 
 

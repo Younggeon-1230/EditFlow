@@ -46,6 +46,10 @@ class ContentIdeaConversionConflictError(Exception):
         self.reason = reason
 
 
+class ContentIdeaMediaSelectionError(Exception):
+    pass
+
+
 def _load_default_checklist_template() -> tuple[dict[str, Any], ...]:
     template_path = Path(__file__).resolve().parents[3] / "shared" / "default-checklist.json"
     with template_path.open(encoding="utf-8") as template_file:
@@ -93,6 +97,100 @@ def _link_content_idea_to_project(
     idea.converted_project_id = project_id
     idea.updated_at = utc_now()
     session.add(idea)
+
+
+def _select_conversion_media(
+    session: Session,
+    idea_id: int,
+    selected_reference_ids: list[int] | None,
+    selected_broll_ids: list[int] | None,
+) -> tuple[list[ContentIdeaReference], list[ContentIdeaBroll]]:
+    reference_statement = (
+        select(ContentIdeaReference)
+        .where(ContentIdeaReference.content_idea_id == idea_id)
+        .order_by(
+            ContentIdeaReference.created_at.desc(),
+            ContentIdeaReference.id.desc(),
+        )
+    )
+    broll_statement = (
+        select(ContentIdeaBroll)
+        .where(ContentIdeaBroll.content_idea_id == idea_id)
+        .order_by(
+            ContentIdeaBroll.created_at.desc(),
+            ContentIdeaBroll.id.desc(),
+        )
+    )
+    if selected_reference_ids is not None:
+        if not selected_reference_ids:
+            idea_references = []
+        else:
+            idea_references = list(
+                session.exec(
+                    reference_statement.where(
+                        ContentIdeaReference.id.in_(selected_reference_ids)
+                    )
+                ).all()
+            )
+            if len(idea_references) != len(selected_reference_ids):
+                raise ContentIdeaMediaSelectionError
+    else:
+        idea_references = list(session.exec(reference_statement).all())
+
+    if selected_broll_ids is not None:
+        if not selected_broll_ids:
+            idea_brolls = []
+        else:
+            idea_brolls = list(
+                session.exec(
+                    broll_statement.where(ContentIdeaBroll.id.in_(selected_broll_ids))
+                ).all()
+            )
+            if len(idea_brolls) != len(selected_broll_ids):
+                raise ContentIdeaMediaSelectionError
+    else:
+        idea_brolls = list(session.exec(broll_statement).all())
+
+    return idea_references, idea_brolls
+
+
+def _copy_conversion_media(
+    session: Session,
+    project_id: int,
+    idea_references: list[ContentIdeaReference],
+    idea_brolls: list[ContentIdeaBroll],
+) -> None:
+    for reference in idea_references:
+        session.add(
+            SavedReference(
+                project_id=project_id,
+                provider=reference.provider,
+                external_id=reference.external_id,
+                title=reference.title,
+                url=reference.url,
+                thumbnail_url=reference.thumbnail_url,
+                channel_title=reference.channel_title,
+                published_at=reference.published_at,
+                note=reference.note,
+            )
+        )
+    for broll in idea_brolls:
+        session.add(
+            SavedBroll(
+                project_id=project_id,
+                provider=broll.provider,
+                external_id=broll.external_id,
+                title=broll.title,
+                url=broll.url,
+                preview_url=broll.preview_url,
+                thumbnail_url=broll.thumbnail_url,
+                creator_name=broll.creator_name,
+                duration_seconds=broll.duration_seconds,
+                width=broll.width,
+                height=broll.height,
+                note=broll.note,
+            )
+        )
 
 
 def normalize_tags(tags: Any) -> Any:
@@ -369,61 +467,37 @@ def convert_content_idea_to_project(
         raise ContentIdeaConversionConflictError("converted")
     if idea.status == ContentIdeaStatus.ARCHIVED:
         raise ContentIdeaConversionConflictError("archived")
+    assert idea.id is not None
 
     project_data = data.model_dump(
-        exclude={"create_default_checklist", "initial_memo"}
+        exclude={
+            "create_default_checklist",
+            "initial_memo",
+            "selected_reference_ids",
+            "selected_broll_ids",
+        }
     )
     if project_data.get("description") == "":
         project_data["description"] = None
     project = Project(user_id=user_id, client_name=None, **project_data)
 
+    idea_references, idea_brolls = _select_conversion_media(
+        session,
+        idea.id,
+        data.selected_reference_ids,
+        data.selected_broll_ids,
+    )
+
     try:
         session.add(project)
         session.flush()
         assert project.id is not None
-        idea_references = list(
-            session.exec(
-                select(ContentIdeaReference).where(
-                    ContentIdeaReference.content_idea_id == idea.id
-                )
-            ).all()
+        _copy_conversion_media(
+            session,
+            project.id,
+            idea_references,
+            idea_brolls,
         )
-        idea_brolls = list(
-            session.exec(
-                select(ContentIdeaBroll).where(ContentIdeaBroll.content_idea_id == idea.id)
-            ).all()
-        )
-        for reference in idea_references:
-            session.add(
-                SavedReference(
-                    project_id=project.id,
-                    provider=reference.provider,
-                    external_id=reference.external_id,
-                    title=reference.title,
-                    url=reference.url,
-                    thumbnail_url=reference.thumbnail_url,
-                    channel_title=reference.channel_title,
-                    published_at=reference.published_at,
-                    note=reference.note,
-                )
-            )
-        for broll in idea_brolls:
-            session.add(
-                SavedBroll(
-                    project_id=project.id,
-                    provider=broll.provider,
-                    external_id=broll.external_id,
-                    title=broll.title,
-                    url=broll.url,
-                    preview_url=broll.preview_url,
-                    thumbnail_url=broll.thumbnail_url,
-                    creator_name=broll.creator_name,
-                    duration_seconds=broll.duration_seconds,
-                    width=broll.width,
-                    height=broll.height,
-                    note=broll.note,
-                )
-            )
         checklist_items = (
             _add_default_checklist_items(session, project.id)
             if data.create_default_checklist
