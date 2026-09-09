@@ -14,7 +14,10 @@ const CONVERSION_ERROR_MESSAGES = {
     typeof data?.detail === 'string'
       ? data.detail
       : '이미 프로젝트로 전환됐거나 전환할 수 없는 소재입니다.',
-  422: '프로젝트 정보를 확인해 주세요.',
+  422: (data) =>
+    typeof data?.detail === 'string'
+      ? data.detail
+      : '프로젝트 정보와 선택한 자료를 확인해 주세요.',
 }
 
 const writableFields = {
@@ -186,21 +189,68 @@ export async function deleteContentIdea(ideaId, signal) {
   })
 }
 
-export async function convertContentIdeaToProject(ideaId, data, signal) {
-  assertIdeaId(ideaId)
+export function createContentIdeaConversionPayload(data) {
   const title = String(data.title ?? '').trim()
   const description = String(data.description ?? '').trim()
   const dueDate = String(data.dueDate ?? '').trim()
+  const createInitialMemo = Boolean(data.createInitialMemo)
+  const initialMemo = createInitialMemo
+    ? String(data.initialMemo ?? '').trim()
+    : null
+
+  if (createInitialMemo && !initialMemo) {
+    throw new Error('초기 프로젝트 메모를 입력해 주세요.')
+  }
+  if (initialMemo && initialMemo.length > 5000) {
+    throw new Error('메모는 5,000자 이하여야 합니다.')
+  }
+
+  const payload = {
+    title,
+    description: description || null,
+    status: data.status || 'planning',
+    due_date: dueDate || null,
+    create_default_checklist: Boolean(data.createDefaultChecklist),
+    initial_memo: initialMemo,
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'selectedReferenceIds')) {
+    payload.selected_reference_ids = normalizeSelectedMediaIds(
+      data.selectedReferenceIds,
+      'Reference',
+    )
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'selectedBrollIds')) {
+    payload.selected_broll_ids = normalizeSelectedMediaIds(
+      data.selectedBrollIds,
+      'B-roll',
+    )
+  }
+
+  return payload
+}
+
+function normalizeSelectedMediaIds(values, label) {
+  if (!Array.isArray(values)) {
+    throw new TypeError(`${label} 선택 정보를 확인해 주세요.`)
+  }
+  const ids = values.map((value) => Number(value))
+  if (ids.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
+    throw new TypeError(`${label} 선택 정보를 확인해 주세요.`)
+  }
+  if (new Set(ids).size !== ids.length) {
+    throw new TypeError(`${label} 선택 정보에 중복된 자료가 있습니다.`)
+  }
+  return ids
+}
+
+export async function convertContentIdeaToProject(ideaId, data, signal) {
+  assertIdeaId(ideaId)
   const result = await requestJson(
     `/api/content-ideas/${ideaId}/convert-to-project`,
     {
       method: 'POST',
-      body: {
-        title,
-        description: description || null,
-        status: data.status || 'planning',
-        due_date: dueDate || null,
-      },
+      body: createContentIdeaConversionPayload(data),
       signal,
       errorMessages: CONVERSION_ERROR_MESSAGES,
       fallbackErrorMessage: '콘텐츠 소재를 프로젝트로 전환하지 못했습니다.',
