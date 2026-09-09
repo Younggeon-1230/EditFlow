@@ -14,7 +14,11 @@ def ensure_development_user(session: Session) -> User:
     if user is not None:
         return user
 
-    user = User(email=DEVELOPMENT_USER_EMAIL)
+    user = User(
+        email=DEVELOPMENT_USER_EMAIL,
+        password_hash=None,
+        is_active=False,
+    )
     session.add(user)
     try:
         session.commit()

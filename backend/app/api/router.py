@@ -1,5 +1,6 @@
 ﻿from fastapi import APIRouter
 
+from app.api.routes.auth import router as auth_router
 from app.api.routes.checklist_items import router as checklist_items_router
 from app.api.routes.content_ideas import router as content_ideas_router
 from app.api.routes.content_idea_brolls import router as content_idea_brolls_router
@@ -13,6 +14,7 @@ from app.api.routes.saved_references import router as saved_references_router
 
 
 api_router = APIRouter()
+api_router.include_router(auth_router)
 api_router.include_router(health_router)
 api_router.include_router(projects_router)
 api_router.include_router(project_memos_router)

@@ -4,6 +4,7 @@ Import and re-export new table models from this module so Alembic's
 autogenerate process registers them with ``SQLModel.metadata``.
 """
 
+from app.models.auth_session import AuthSession
 from app.models.checklist_item import ChecklistItem
 from app.models.content_idea import (
     ContentIdea,
@@ -23,6 +24,7 @@ from app.models.user import User
 
 
 __all__ = [
+    "AuthSession",
     "ChecklistItem",
     "ContentIdea",
     "ContentIdeaBroll",

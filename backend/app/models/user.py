@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, String
+from sqlalchemy import Boolean, Column, DateTime, String, true
 from sqlmodel import Field, SQLModel
 
 
@@ -14,6 +14,18 @@ class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     email: str = Field(
         sa_column=Column(String(255), nullable=False, unique=True, index=True)
+    )
+    password_hash: str | None = Field(
+        default=None,
+        sa_column=Column(String(255), nullable=True),
+    )
+    is_active: bool = Field(
+        default=True,
+        sa_column=Column(
+            Boolean,
+            nullable=False,
+            server_default=true(),
+        ),
     )
     created_at: datetime = Field(
         default_factory=utc_now,

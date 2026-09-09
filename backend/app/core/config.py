@@ -1,4 +1,5 @@
 ﻿from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,7 +11,19 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     database_url: str = "sqlite:///./editflow.db"
-    frontend_origin: str = "http://localhost:5173"
+    frontend_origin: str = "http://127.0.0.1:5173"
+
+    auth_session_cookie_name: str = "editflow_session"
+    auth_csrf_cookie_name: str = "editflow_csrf"
+    auth_session_ttl_seconds: int = Field(default=604800, ge=1)
+    auth_cookie_secure: bool = False
+    auth_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
+    auth_password_min_length: int = Field(default=12, ge=1)
+    auth_password_max_length: int = Field(default=128, ge=1)
+    auth_login_rate_limit_requests: int = Field(default=5, ge=1)
+    auth_login_rate_limit_window_seconds: int = Field(default=60, ge=1)
+    auth_signup_rate_limit_requests: int = Field(default=3, ge=1)
+    auth_signup_rate_limit_window_seconds: int = Field(default=600, ge=1)
 
     youtube_api_key: str | None = None
     pexels_api_key: str | None = None
