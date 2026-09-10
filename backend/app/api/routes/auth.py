@@ -8,10 +8,32 @@ from app.api.dependencies import (
 )
 from app.schemas.auth import AuthUserRead, LoginRequest, SignupRequest
 from app.services import auth as auth_service
-from app.services.auth_cookies import clear_auth_cookies, set_auth_cookies
+from app.services.auth_cookies import (
+    clear_auth_cookies,
+    set_auth_cookies,
+    set_csrf_cookie,
+)
+from app.services.csrf import generate_csrf_token
 
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
+
+
+@router.get("/csrf", status_code=status.HTTP_204_NO_CONTENT)
+def csrf_bootstrap(
+    response: Response,
+    session: SessionDependency,
+    context: OptionalAuthContextDependency,
+    settings: SettingsDependency,
+) -> Response:
+    csrf_token = generate_csrf_token()
+    if context is not None:
+        context.auth_session.csrf_token_digest = auth_service.token_digest(csrf_token)
+        session.add(context.auth_session)
+        session.commit()
+    set_csrf_cookie(response, csrf_token, settings)
+    response.status_code = status.HTTP_204_NO_CONTENT
+    return response
 
 
 @router.post(

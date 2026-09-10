@@ -1,8 +1,8 @@
 ﻿from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -11,10 +11,13 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     database_url: str = "sqlite:///./editflow.db"
-    frontend_origin: str = "http://127.0.0.1:5173"
+    frontend_origins: Annotated[list[str], NoDecode] = [
+        "http://127.0.0.1:5173"
+    ]
 
     auth_session_cookie_name: str = "editflow_session"
     auth_csrf_cookie_name: str = "editflow_csrf"
+    auth_csrf_header_name: str = "X-CSRF-Token"
     auth_session_ttl_seconds: int = Field(default=604800, ge=1)
     auth_cookie_secure: bool = False
     auth_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
@@ -55,6 +58,19 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @field_validator("frontend_origins", mode="before")
+    @classmethod
+    def parse_frontend_origins(cls, value: object) -> object:
+        if isinstance(value, str):
+            origins = [origin.strip().rstrip("/") for origin in value.split(",")]
+        else:
+            origins = value
+        if not isinstance(origins, list) or not origins:
+            raise ValueError("FRONTEND_ORIGINS must contain at least one origin")
+        if any(not origin or origin == "*" for origin in origins):
+            raise ValueError("FRONTEND_ORIGINS cannot contain empty or wildcard origins")
+        return origins
 
 
 @lru_cache

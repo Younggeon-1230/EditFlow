@@ -16,6 +16,27 @@ from app.services.pexels import pexels_search_cache
 from app.services.youtube import youtube_search_cache
 
 
+FRONTEND_ORIGIN = "http://127.0.0.1:5173"
+UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+class CsrfTestClient(TestClient):
+    """Exercise the browser CSRF flow by default in existing endpoint tests."""
+
+    def request(self, method: str, url, **kwargs):
+        if method.upper() in UNSAFE_METHODS:
+            csrf_token = self.cookies.get("editflow_csrf")
+            if csrf_token is None:
+                bootstrap = super().request("GET", "/api/auth/csrf")
+                assert bootstrap.status_code == 204
+                csrf_token = self.cookies.get("editflow_csrf")
+            headers = dict(kwargs.pop("headers", {}) or {})
+            headers.setdefault("Origin", FRONTEND_ORIGIN)
+            headers["X-CSRF-Token"] = csrf_token
+            kwargs["headers"] = headers
+        return super().request(method, url, **kwargs)
+
+
 @pytest.fixture(autouse=True)
 def clear_external_search_caches() -> Generator[None, None, None]:
     youtube_search_cache.clear()
@@ -49,7 +70,19 @@ def test_engine(tmp_path: Path) -> Generator[Engine, None, None]:
 
 
 @pytest.fixture
-def client(test_engine: Engine) -> Generator[TestClient, None, None]:
+def client(test_engine: Engine) -> Generator[CsrfTestClient, None, None]:
+    def get_test_session() -> Generator[Session, None, None]:
+        with Session(test_engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = get_test_session
+    with CsrfTestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def raw_client(test_engine: Engine) -> Generator[TestClient, None, None]:
     def get_test_session() -> Generator[Session, None, None]:
         with Session(test_engine) as session:
             yield session

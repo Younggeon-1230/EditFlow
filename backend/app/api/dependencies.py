@@ -13,6 +13,11 @@ from app.providers.llm import (
     OpenAIContentRecommendationProvider,
 )
 from app.services.auth import AuthContext, lookup_auth_context
+from app.services.csrf import (
+    UNSAFE_METHODS,
+    validate_csrf_tokens,
+    validate_request_origin,
+)
 from app.services.users import ensure_development_user
 
 
@@ -87,6 +92,29 @@ CurrentAuthSessionDependency = Annotated[
     AuthSession,
     Depends(get_current_auth_session),
 ]
+
+
+def enforce_csrf(
+    request: Request,
+    session: SessionDependency,
+    settings: SettingsDependency,
+) -> None:
+    if request.method not in UNSAFE_METHODS:
+        return
+
+    raw_session_token = request.cookies.get(settings.auth_session_cookie_name)
+    context = lookup_auth_context(session, raw_session_token)
+
+    # Logout stays idempotent for missing, expired, revoked, or invalid sessions.
+    if request.url.path == "/api/auth/logout" and context is None:
+        return
+
+    validate_request_origin(request, settings)
+    validate_csrf_tokens(
+        request,
+        settings,
+        context.auth_session if context is not None else None,
+    )
 
 
 def get_content_recommendation_provider(
