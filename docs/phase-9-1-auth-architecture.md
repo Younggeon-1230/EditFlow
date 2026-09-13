@@ -474,4 +474,4 @@ Phase 9-1은 docs-only로 완료되었고 Phase 9-2에서 다음 기반이 구�
 - login/signup in-memory rate limit
 - local frontend origin을 `127.0.0.1:5173`으로 통일
 
-아직 구현하지 않은 항목은 `GET /api/auth/csrf`, CSRF header/session binding 검증, Origin 검사, origin 목록 기반 CORS, 기존 API의 `CurrentUserDependency` 전환, frontend auth UI와 보호 route, localStorage 사용자 격리이다. CSRF cookie와 DB digest는 준비됐지만 Phase 9-3 전까지 검증되지 않는다. 기존 user-scoped API는 Phase 9-5까지 `dev@editflow.local`을 계속 사용한다.
+Phase 9-3에서 `GET /api/auth/csrf`, CSRF header/session binding 검증, Origin/Referer 검사, origin 목록 기반 CORS와 frontend 공통 client 처리를 구현했다. 아직 구현하지 않은 항목은 기존 API의 `CurrentUserDependency` 전환, frontend auth UI와 보호 route, localStorage 사용자 격리이다. 기존 user-scoped API는 Phase 9-5까지 `dev@editflow.local`을 계속 사용하며, 이 과도기 endpoint의 정확한 CSRF 범위는 `phase-9-3-csrf-cors-integration.md`에 기록한다.
