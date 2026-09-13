@@ -27,7 +27,7 @@ function ChecklistPage() {
     resetChecklist,
     migrateChecklistToBackend,
   } = useChecklist(
-    selectedProjectId,
+    selectedProject?.id ? String(selectedProject.id) : '',
     selectedProject?.backendProjectId ?? null,
   )
 
@@ -39,7 +39,7 @@ function ChecklistPage() {
     )
 
     if (shouldReset) {
-      await resetChecklist(selectedProjectId)
+      await resetChecklist(selectedProject?.id ? String(selectedProject.id) : '')
     }
   }
 

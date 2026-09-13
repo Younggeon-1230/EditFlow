@@ -28,6 +28,10 @@ function App() {
           <Route path={ROUTES.reference} element={<ReferenceSearchPage />} />
           <Route path={ROUTES.broll} element={<BrollSearchPage />} />
           <Route path={ROUTES.projects} element={<ProjectListPage />} />
+          <Route
+            path={ROUTES.localProjectDetail}
+            element={<ProjectDetailPage projectKind="local" />}
+          />
           <Route path={ROUTES.projectDetail} element={<ProjectDetailPage />} />
           <Route path={ROUTES.checklist} element={<ChecklistPage />} />
           <Route path={ROUTES.ideas} element={<ContentIdeasPage />} />

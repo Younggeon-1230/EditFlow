@@ -117,10 +117,12 @@ export function updateProjectPayload(changes) {
   return payload
 }
 
-export function mapBackendProject(project) {
+export function mapProjectFromApi(project) {
+  if (!Number.isSafeInteger(project?.id) || project.id <= 0) {
+    throw new TypeError('서버 프로젝트 ID는 양의 정수여야 합니다.')
+  }
   return {
-    backendProjectId: project.id,
-    userId: project.user_id,
+    id: project.id,
     title: project.title,
     description: project.description ?? '',
     clientName: project.client_name ?? '',
@@ -135,10 +137,14 @@ export function mapBackendProject(project) {
   }
 }
 
+// Kept as a temporary import alias for Phase 10 transition consumers.
+export const mapBackendProject = mapProjectFromApi
+
 export function mergeBackendProject(localProject, backendProject) {
+  const backendProjectId = backendProject.id ?? backendProject.backendProjectId
   return {
     ...localProject,
-    backendProjectId: backendProject.backendProjectId,
+    backendProjectId,
     title: backendProject.title,
     description: backendProject.description,
     clientName: backendProject.clientName,
@@ -167,7 +173,7 @@ export async function getProjects(signal) {
     errorMessages: PROJECT_ERROR_MESSAGES,
     fallbackErrorMessage: '서버 프로젝트를 불러오지 못했습니다.',
   })
-  return projects.map(mapBackendProject)
+  return projects.map(mapProjectFromApi)
 }
 
 export async function getProject(projectId, signal) {
@@ -176,7 +182,7 @@ export async function getProject(projectId, signal) {
     errorMessages: PROJECT_ERROR_MESSAGES,
     fallbackErrorMessage: '서버 프로젝트를 불러오지 못했습니다.',
   })
-  return mapBackendProject(project)
+  return mapProjectFromApi(project)
 }
 
 export async function createProject(project, signal) {
@@ -187,7 +193,7 @@ export async function createProject(project, signal) {
     errorMessages: PROJECT_ERROR_MESSAGES,
     fallbackErrorMessage: '프로젝트를 서버에 저장하지 못했습니다.',
   })
-  return mapBackendProject(createdProject)
+  return mapProjectFromApi(createdProject)
 }
 
 export async function updateProject(projectId, changes, signal) {
@@ -198,7 +204,7 @@ export async function updateProject(projectId, changes, signal) {
     errorMessages: PROJECT_ERROR_MESSAGES,
     fallbackErrorMessage: '프로젝트를 서버에서 수정하지 못했습니다.',
   })
-  return mapBackendProject(updatedProject)
+  return mapProjectFromApi(updatedProject)
 }
 
 export async function deleteProject(projectId, signal) {

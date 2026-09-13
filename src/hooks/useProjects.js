@@ -99,7 +99,7 @@ function useProjects() {
         const backendProjects = await getProjects(controller.signal)
         const backendById = new Map(
           backendProjects.map((project) => [
-            project.backendProjectId,
+            project.id,
             project,
           ]),
         )
@@ -378,12 +378,13 @@ function useProjects() {
   }
 
   function registerBackendProject(serverProject) {
-    if (!isBackendProjectId(serverProject?.backendProjectId)) {
+    const backendProjectId = serverProject?.id ?? serverProject?.backendProjectId
+    if (!isBackendProjectId(backendProjectId)) {
       throw new Error('서버 프로젝트 ID를 확인할 수 없습니다.')
     }
 
     const existingProject = projectsRef.current.find(
-      (project) => project.backendProjectId === serverProject.backendProjectId,
+      (project) => project.backendProjectId === backendProjectId,
     )
     if (existingProject) {
       return existingProject

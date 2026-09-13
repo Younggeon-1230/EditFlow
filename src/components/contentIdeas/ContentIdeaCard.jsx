@@ -13,7 +13,7 @@ function formatDate(value) {
   return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium' }).format(new Date(value))
 }
 
-function ContentIdeaCard({ idea, onEdit, onDelete, onConvert, onMediaChanged, localProjectId, isUpdating, isDeleting, isConverting }) {
+function ContentIdeaCard({ idea, onEdit, onDelete, onConvert, onMediaChanged, isUpdating, isDeleting, isConverting }) {
   const [isMediaOpen, setIsMediaOpen] = useState(false)
   const disabled = isUpdating || isDeleting || isConverting
   const canConvert = !idea.convertedProjectId && ['idea', 'researching', 'ready'].includes(idea.status)
@@ -39,7 +39,7 @@ function ContentIdeaCard({ idea, onEdit, onDelete, onConvert, onMediaChanged, lo
         <Link className="secondary-button link-button" to={generatePath(ROUTES.ideaDetail, { ideaId: idea.id })}>상세 보기</Link>
         {canConvert && <button className="primary-button idea-convert-button" disabled={disabled} onClick={() => onConvert(idea)} type="button">{isConverting ? '전환 중…' : '프로젝트로 전환'}</button>}
         {idea.status === 'archived' && !idea.convertedProjectId && <button className="secondary-button" disabled title="보관된 소재는 전환할 수 없습니다." type="button">전환 불가</button>}
-        {localProjectId && <Link className="secondary-button link-button" to={generatePath(ROUTES.projectDetail, { projectId: localProjectId })}>프로젝트 보기</Link>}
+        {idea.convertedProjectId && <Link className="secondary-button link-button" to={generatePath(ROUTES.projectDetail, { projectId: idea.convertedProjectId })}>프로젝트 보기</Link>}
         <button className="secondary-button" disabled={disabled} onClick={() => onEdit(idea)} type="button">수정</button>
         <button aria-expanded={isMediaOpen} className="secondary-button" onClick={() => setIsMediaOpen((open) => !open)} type="button">{isMediaOpen ? '연결 자료 닫기' : '연결 자료 관리'}</button>
         <button className="idea-delete-button" disabled={disabled} onClick={() => onDelete(idea)} type="button">{isDeleting ? '삭제 중…' : '삭제'}</button>

@@ -1,58 +1,41 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import useProjects from './useProjects'
+import useLegacyProjects from './useLegacyProjects.js'
+import useServerProjects from './useServerProjects.js'
 
 function useProjectSelection() {
-  const { projects } = useProjects()
+  const server = useServerProjects()
+  const legacy = useLegacyProjects(server.projects, server.hasResult)
   const [searchParams, setSearchParams] = useSearchParams()
   const queryProjectId = searchParams.get('project') ?? ''
-  const [selectedProjectId, setSelectedProjectIdState] = useState(
-    queryProjectId,
-  )
+  const projects = useMemo(() => [
+    ...server.projects.map((project) => ({ ...project, projectKind: 'server', backendProjectId: project.id, selectionId: String(project.id) })),
+    ...legacy.projects.map((project) => ({ ...project, projectKind: 'local', backendProjectId: null, selectionId: `local:${project.id}` })),
+  ], [legacy.projects, server.projects])
+  const [selectedProjectId, setSelectedProjectIdState] = useState(queryProjectId)
 
   useEffect(() => {
-    const queryProject = projects.find(
-      (project) => project.id === queryProjectId,
-    )
-    if (queryProject && queryProject.id !== selectedProjectId) {
-      setSelectedProjectIdState(queryProject.id)
-      return
-    }
-
-    if (
-      projects.length > 0 &&
-      !projects.some((project) => project.id === selectedProjectId)
-    ) {
-      setSelectedProjectIdState(projects[0].id)
-    }
-
-    if (projects.length === 0 && selectedProjectId) {
-      setSelectedProjectIdState('')
+    if (projects.some((project) => project.selectionId === queryProjectId)) {
+      setSelectedProjectIdState(queryProjectId)
+    } else if (!projects.some((project) => project.selectionId === selectedProjectId)) {
+      setSelectedProjectIdState(projects[0]?.selectionId ?? '')
     }
   }, [projects, queryProjectId, selectedProjectId])
 
   function setSelectedProjectId(projectId) {
     setSelectedProjectIdState(projectId)
     const nextParams = new URLSearchParams(searchParams)
-    if (projectId) {
-      nextParams.set('project', projectId)
-    } else {
-      nextParams.delete('project')
-    }
+    if (projectId) nextParams.set('project', projectId)
+    else nextParams.delete('project')
     setSearchParams(nextParams, { replace: true })
   }
 
   const selectedProject = useMemo(
-    () => projects.find((project) => project.id === selectedProjectId) ?? null,
+    () => projects.find((project) => project.selectionId === selectedProjectId) ?? null,
     [projects, selectedProjectId],
   )
 
-  return {
-    projects,
-    selectedProject,
-    selectedProjectId,
-    setSelectedProjectId,
-  }
+  return { projects, selectedProject, selectedProjectId, setSelectedProjectId, isLoading: server.isLoading, error: server.error, refetch: server.refetch }
 }
 
 export default useProjectSelection

@@ -13,8 +13,8 @@ function ProjectSelector({ projects, selectedProjectId, onChange }) {
           value={selectedProjectId}
         >
           {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.title}
+            <option key={project.selectionId ?? project.id} value={project.selectionId ?? project.id}>
+              {project.title}{project.projectKind === 'local' ? ' (로컬)' : ''}
             </option>
           ))}
         </select>

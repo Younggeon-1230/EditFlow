@@ -11,7 +11,6 @@ import {
 } from '../constants/contentIdeas.js'
 import useContentIdeaDetail from '../hooks/useContentIdeaDetail.js'
 import useContentIdeaProjectRelation from '../hooks/useContentIdeaProjectRelation.js'
-import useProjects from '../hooks/useProjects.js'
 
 const PROJECT_STATUS_LABELS = {
   planning: '기획 중',
@@ -40,20 +39,9 @@ function ContentIdeaDetailPage() {
   const ideaId = parseIdeaId(routeIdeaId)
   const navigate = useNavigate()
   const detail = useContentIdeaDetail(ideaId)
-  const {
-    projects,
-    registerBackendProject,
-    restoreErrors,
-    restoringProjectIds,
-    restoreServerProject,
-  } = useProjects()
   const relation = useContentIdeaProjectRelation(detail.idea?.convertedProjectId ?? null)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isConversionOpen, setIsConversionOpen] = useState(false)
-  const [registrationError, setRegistrationError] = useState(null)
-  const localProject = projects.find(
-    (project) => project.backendProjectId === detail.idea?.convertedProjectId,
-  )
 
   if (!ideaId) {
     return (
@@ -106,31 +94,18 @@ function ContentIdeaDetailPage() {
   async function handleConversion(values) {
     const result = await detail.convert(values)
     if (!result) return null
-    try {
-      const nextLocalProject = registerBackendProject(result.project)
-      setIsConversionOpen(false)
-      navigate(generatePath(ROUTES.projectDetail, { projectId: nextLocalProject.id }))
-    } catch (error) {
-      setIsConversionOpen(false)
-      setRegistrationError(error.message || '프로젝트의 로컬 화면 연결을 만들지 못했습니다.')
-    }
+    setIsConversionOpen(false)
+    navigate(generatePath(ROUTES.projectDetail, { projectId: result.project.id }))
     return result
-  }
-
-  async function handleProjectRestore() {
-    const restored = await restoreServerProject(idea.convertedProjectId)
-    if (restored) {
-      navigate(generatePath(ROUTES.projectDetail, { projectId: restored.id }))
-    }
   }
 
   return (
     <main className="content-idea-detail-page">
       <Link className="detail-back-link" to={ROUTES.ideas}><span aria-hidden="true">←</span> 콘텐츠 소재 목록</Link>
 
-      {(detail.actionError || registrationError) && (
+      {detail.actionError && (
         <div className="reference-state error-state" role="alert">
-          <p>{registrationError || detail.actionError}</p>
+          <p>{detail.actionError}</p>
         </div>
       )}
 
@@ -195,15 +170,7 @@ function ContentIdeaDetailPage() {
                 <div><dt>상태</dt><dd>{PROJECT_STATUS_LABELS[relation.project.status] ?? relation.project.status}</dd></div>
                 <div><dt>마감일</dt><dd>{formatDate(relation.project.dueDate)}</dd></div>
               </dl>
-              {localProject ? (
-                <Link className="primary-button link-button" to={generatePath(ROUTES.projectDetail, { projectId: localProject.id })}>프로젝트 보기</Link>
-              ) : (
-                <div className="relationship-restore">
-                  <p className="relationship-mapping-warning">이 프로젝트는 서버에 존재하지만 현재 브라우저의 프로젝트 목록에는 연결되어 있지 않습니다. 가져오면 서버에 새 프로젝트를 만들지 않고 이 브라우저에만 연결합니다.</p>
-                  {restoreErrors[idea.convertedProjectId] && <p className="relationship-restore-error" role="alert">{restoreErrors[idea.convertedProjectId]}</p>}
-                  <button className="primary-button" disabled={restoringProjectIds.has(idea.convertedProjectId)} onClick={handleProjectRestore} type="button">{restoringProjectIds.has(idea.convertedProjectId) ? '가져오는 중…' : '이 프로젝트 가져오기'}</button>
-                </div>
-              )}
+              <Link className="primary-button link-button" to={generatePath(ROUTES.projectDetail, { projectId: idea.convertedProjectId })}>프로젝트 보기</Link>
             </div>
           ) : null}
         </section>

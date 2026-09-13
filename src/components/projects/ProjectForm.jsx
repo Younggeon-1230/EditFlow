@@ -1,6 +1,12 @@
 import { useState } from 'react'
 
 const statusOptions = ['기획 중', '소스 수집 중', '편집 중', '검토 중', '완료']
+const statusLabelByCanonical = {
+  planning: '기획 중',
+  in_progress: '편집 중',
+  completed: '완료',
+  archived: '보관됨',
+}
 
 function ProjectForm({
   initialValue,
@@ -8,15 +14,16 @@ function ProjectForm({
   onCancel,
   isSubmitting = false,
 }) {
+  const initialStatus = statusLabelByCanonical[initialValue?.status] ?? initialValue?.status
   const [formValues, setFormValues] = useState({
     title: initialValue?.title ?? '',
     description: initialValue?.description ?? '',
-    deadline: initialValue?.deadline ?? '',
-    status: initialValue?.status ?? statusOptions[0],
+    deadline: initialValue?.dueDate ?? initialValue?.deadline ?? '',
+    status: initialStatus ?? statusOptions[0],
   })
 
   const hasLegacyStatus =
-    initialValue?.status && !statusOptions.includes(initialValue.status)
+    initialStatus && !statusOptions.includes(initialStatus)
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -78,7 +85,7 @@ function ProjectForm({
           <span>상태</span>
           <select name="status" onChange={handleChange} value={formValues.status}>
             {hasLegacyStatus && (
-              <option value={initialValue.status}>{initialValue.status}</option>
+              <option value={initialStatus}>{initialStatus}</option>
             )}
             {statusOptions.map((status) => (
               <option key={status} value={status}>

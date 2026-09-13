@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import BrollPanel from '../components/projectDetail/BrollPanel'
 import ChecklistMemoPanel from '../components/projectDetail/ChecklistMemoPanel'
 import ProjectInfo from '../components/projectDetail/ProjectInfo'
@@ -15,11 +15,14 @@ import ProjectForm from '../components/projects/ProjectForm'
 import { ROUTES } from '../constants/app'
 import projectDetailSamples from '../data/projectDetailSamples'
 import useChecklist from '../hooks/useChecklist'
-import useProjects from '../hooks/useProjects'
+import useLegacyProjects from '../hooks/useLegacyProjects.js'
+import useServerProject from '../hooks/useServerProject.js'
 import useProjectMemos from '../hooks/useProjectMemos'
 import useProjectSourceContentIdea from '../hooks/useProjectSourceContentIdea.js'
 import useSavedBrolls from '../hooks/useSavedBrolls'
 import useSavedReferences from '../hooks/useSavedReferences'
+import { deleteProject as deleteProjectRequest, updateProject as updateProjectRequest } from '../services/projectsApi.js'
+import { parseServerProjectId, removeStoredProject, resolveLegacyProjectRoute, updateStoredProject } from '../utils/projectRead.js'
 
 const panelComponents = {
   references: ReferencePanel,
@@ -27,10 +30,12 @@ const panelComponents = {
   brolls: BrollPanel,
 }
 
-function ProjectDetailPage() {
-  const { projectId } = useParams()
+function ProjectDetailPage({ projectKind = 'server' }) {
+  const { projectId, localProjectId } = useParams()
   const navigate = useNavigate()
-  const { projects, updateProject, deleteProject } = useProjects()
+  const serverProjectId = projectKind === 'server' ? parseServerProjectId(projectId) : null
+  const server = useServerProject(serverProjectId)
+  const legacy = useLegacyProjects()
   const [activeTab, setActiveTab] = useState('references')
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isStatusOpen, setIsStatusOpen] = useState(false)
@@ -38,18 +43,22 @@ function ProjectDetailPage() {
   const [pendingAction, setPendingAction] = useState(null)
   const pendingActionRef = useRef(null)
   const [actionError, setActionError] = useState(null)
-  const project = projects.find((item) => item.id === projectId)
+  const project = projectKind === 'server'
+    ? server.project
+    : legacy.storedProjects.find((item) => item.id === localProjectId) ?? null
+  const childProjectId = projectKind === 'server' ? String(serverProjectId ?? '') : localProjectId
+  const backendProjectId = projectKind === 'server' ? serverProjectId : null
   const checklist = useChecklist(
-    projectId,
-    project?.backendProjectId ?? null,
+    childProjectId,
+    backendProjectId,
   )
   const projectMemos = useProjectMemos(
-    projectId,
-    project?.backendProjectId ?? null,
+    childProjectId,
+    backendProjectId,
   )
-  const savedReferences = useSavedReferences(project?.backendProjectId ?? null)
-  const savedBrolls = useSavedBrolls(project?.backendProjectId ?? null)
-  const sourceIdea = useProjectSourceContentIdea(project?.backendProjectId ?? null)
+  const savedReferences = useSavedReferences(backendProjectId)
+  const savedBrolls = useSavedBrolls(backendProjectId)
+  const sourceIdea = useProjectSourceContentIdea(backendProjectId)
 
   useEffect(() => {
     setIsEditOpen(false)
@@ -57,7 +66,20 @@ function ProjectDetailPage() {
     setPendingAction(null)
     pendingActionRef.current = null
     setActionError(null)
-  }, [projectId])
+  }, [projectId, localProjectId])
+
+  if (projectKind === 'server' && !serverProjectId) {
+    const legacyRoute = resolveLegacyProjectRoute(projectId, legacy.storedProjects)
+    if (legacyRoute) return <Navigate replace to={legacyRoute} />
+  }
+
+  if (projectKind === 'server' && server.isLoading && !project) {
+    return <main className="project-not-found"><section role="status"><p>서버 프로젝트를 불러오는 중입니다.</p></section></main>
+  }
+
+  if (projectKind === 'server' && server.error && !project) {
+    return <main className="project-not-found"><section><p className="page-eyebrow">PROJECT ERROR</p><h1>프로젝트를 불러오지 못했습니다.</h1><p role="alert">{server.error}</p><button className="secondary-button" onClick={server.reload} type="button">다시 시도</button></section></main>
+  }
 
   if (!project) {
     return (
@@ -75,10 +97,9 @@ function ProjectDetailPage() {
   }
 
   const ActivePanel = panelComponents[activeTab]
-  const usesBackend =
-    Number.isInteger(project.backendProjectId) && project.backendProjectId > 0
+  const usesBackend = projectKind === 'server'
   const currentBackendStatus =
-    project.backendStatus ??
+    (usesBackend ? project.status : project.backendStatus) ??
     (project.status === '완료'
       ? 'completed'
       : project.status === '보관' || project.status === '보관됨'
@@ -86,7 +107,7 @@ function ProjectDetailPage() {
         : project.status === '기획 중'
           ? 'planning'
           : 'in_progress')
-  const projectQuery = `?project=${encodeURIComponent(project.id)}`
+  const projectQuery = `?project=${encodeURIComponent(usesBackend ? project.id : `local:${project.id}`)}`
   const panelProps = {
     references: usesBackend
       ? {
@@ -120,7 +141,16 @@ function ProjectDetailPage() {
     pendingActionRef.current = 'edit'
     setPendingAction('edit')
     setActionError(null)
-    const updated = await updateProject(project.id, projectValues)
+    let updated = null
+    try {
+      updated = usesBackend
+        ? await updateProjectRequest(project.id, projectValues)
+        : updateStoredProject(localStorage, legacy.storageKey, project.id, projectValues)
+      if (usesBackend) await server.reload()
+      else legacy.reload()
+    } catch (error) {
+      setActionError(error.message || '프로젝트를 수정하지 못했습니다.')
+    }
     pendingActionRef.current = null
     setPendingAction(null)
     if (updated) {
@@ -150,7 +180,17 @@ function ProjectDetailPage() {
     pendingActionRef.current = 'status'
     setPendingAction('status')
     setActionError(null)
-    const updated = await updateProject(project.id, { status: statusLabel })
+    const statusValue = usesBackend ? selectedStatus : statusLabel
+    let updated = null
+    try {
+      updated = usesBackend
+        ? await updateProjectRequest(project.id, { status: statusValue })
+        : updateStoredProject(localStorage, legacy.storageKey, project.id, { status: statusValue })
+      if (usesBackend) await server.reload()
+      else legacy.reload()
+    } catch (error) {
+      setActionError(error.message || '프로젝트 상태를 변경하지 못했습니다.')
+    }
     pendingActionRef.current = null
     setPendingAction(null)
     if (updated) {
@@ -173,7 +213,18 @@ function ProjectDetailPage() {
     pendingActionRef.current = 'delete'
     setPendingAction('delete')
     setActionError(null)
-    const deleted = await deleteProject(project.id)
+    let deleted = false
+    try {
+      if (usesBackend) {
+        await deleteProjectRequest(project.id)
+        deleted = true
+      } else {
+        deleted = removeStoredProject(localStorage, legacy.storageKey, project.id)
+        legacy.reload()
+      }
+    } catch (error) {
+      setActionError(error.message || '프로젝트를 삭제하지 못했습니다.')
+    }
     if (deleted) {
       navigate(ROUTES.projects, { replace: true })
       return
@@ -188,6 +239,8 @@ function ProjectDetailPage() {
       <Link className="detail-back-link" to={ROUTES.projects}>
         <span aria-hidden="true">←</span> 프로젝트 목록
       </Link>
+
+      {!usesBackend && <div className="reference-state" role="status"><strong>로컬 프로젝트</strong><p>이 프로젝트는 현재 사용자 브라우저 저장소에만 있습니다.</p></div>}
 
       {actionError && (
         <div className="reference-state error-state" role="alert">
@@ -205,7 +258,7 @@ function ProjectDetailPage() {
         }}
         project={project}
       />
-      <ProjectSourceIdea project={project} relation={sourceIdea} />
+      <ProjectSourceIdea projectKind={projectKind} relation={sourceIdea} />
       <ProjectTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       <section

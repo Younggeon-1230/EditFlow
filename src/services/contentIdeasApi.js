@@ -1,6 +1,6 @@
 import { requestJson } from './apiClient.js'
 import { CONTENT_IDEA_LIMITS } from '../constants/contentIdeas.js'
-import { mapBackendProject } from './projectsApi.js'
+import { mapProjectFromApi } from './projectsApi.js'
 
 const CONTENT_IDEA_ERROR_MESSAGES = {
   400: '수정할 콘텐츠 소재 내용이 없습니다.',
@@ -258,8 +258,7 @@ export async function convertContentIdeaToProject(ideaId, data, signal) {
   )
   return {
     project: {
-      ...mapBackendProject(result.project),
-      id: result.project.id,
+      ...mapProjectFromApi(result.project),
     },
     contentIdea: mapContentIdea(result.content_idea),
   }

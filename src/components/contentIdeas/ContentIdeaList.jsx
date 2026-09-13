@@ -1,6 +1,6 @@
 import ContentIdeaCard from './ContentIdeaCard.jsx'
 
-function ContentIdeaList({ items, onEdit, onDelete, onConvert, onMediaChanged, projects, updatingIds, deletingIds, convertingIds }) {
+function ContentIdeaList({ items, onEdit, onDelete, onConvert, onMediaChanged, updatingIds, deletingIds, convertingIds }) {
   return (
     <section className="idea-grid" aria-label="콘텐츠 소재 목록">
       {items.map((idea) => (
@@ -14,7 +14,6 @@ function ContentIdeaList({ items, onEdit, onDelete, onConvert, onMediaChanged, p
           onEdit={onEdit}
           onConvert={onConvert}
           onMediaChanged={onMediaChanged}
-          localProjectId={projects.find((project) => project.backendProjectId === idea.convertedProjectId)?.id}
         />
       ))}
     </section>

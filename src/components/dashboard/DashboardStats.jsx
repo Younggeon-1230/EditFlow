@@ -6,7 +6,7 @@ const statIcons = {
   checklists: 'C',
 }
 
-function DashboardStats({ stats, isLoading, error }) {
+function DashboardStats({ stats, isLoading, error, onRetry }) {
   if (isLoading) {
     return (
       <section className="dashboard-status" aria-live="polite">
@@ -18,7 +18,8 @@ function DashboardStats({ stats, isLoading, error }) {
   if (error) {
     return (
       <section className="dashboard-status dashboard-error" role="alert">
-        {error}
+        <p>{error}</p>
+        <button className="secondary-button" onClick={onRetry} type="button">다시 시도</button>
       </section>
     )
   }

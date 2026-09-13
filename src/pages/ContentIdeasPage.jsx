@@ -8,13 +8,11 @@ import ContentIdeaSummary from '../components/contentIdeas/ContentIdeaSummary.js
 import useContentIdeas from '../hooks/useContentIdeas.js'
 import useContentIdeaSummary from '../hooks/useContentIdeaSummary.js'
 import useContentIdeaRecommendations from '../hooks/useContentIdeaRecommendations.js'
-import useProjects from '../hooks/useProjects.js'
 import { generatePath, useNavigate } from 'react-router-dom'
 import { ROUTES } from '../constants/app.js'
 
 function ContentIdeasPage() {
   const navigate = useNavigate()
-  const { projects, registerBackendProject } = useProjects()
   const {
     filters, setFilters, items, isLoading, error, errorTitle, isCreating,
     updatingIds, deletingIds, convertingIds, conversionError, refetch,
@@ -24,7 +22,6 @@ function ContentIdeasPage() {
   const { summary, isLoading: isSummaryLoading, error: summaryError, refetch: refetchSummary } = useContentIdeaSummary(mutationVersion)
   const [formIdea, setFormIdea] = useState(undefined)
   const [conversionIdea, setConversionIdea] = useState(null)
-  const [registrationError, setRegistrationError] = useState(null)
   const [isRecommendationOpen, setIsRecommendationOpen] = useState(false)
   const recommendationTriggerRef = useRef(null)
   const recommendationState = useContentIdeaRecommendations()
@@ -45,17 +42,8 @@ function ContentIdeasPage() {
   async function handleConversion(values) {
     const result = await convertIdeaToProject(conversionIdea.id, values)
     if (!result) return null
-    try {
-      const localProject = registerBackendProject(result.project)
-      setConversionIdea(null)
-      navigate(generatePath(ROUTES.projectDetail, { projectId: localProject.id }))
-    } catch (localError) {
-      setConversionIdea(null)
-      setRegistrationError(
-        localError.message ||
-          '프로젝트는 생성됐지만 화면 목록에 연결하지 못했습니다. 프로젝트 목록을 새로고침해 주세요.',
-      )
-    }
+    setConversionIdea(null)
+    navigate(generatePath(ROUTES.projectDetail, { projectId: result.project.id }))
     return result
   }
 
@@ -93,12 +81,11 @@ function ContentIdeasPage() {
       <ContentIdeaFilters filters={filters} onChange={setFilters} onClear={clearFilters} />
       <div className="idea-results-heading"><strong>{hasFilters ? `전체 ${summary?.total ?? '–'}개 중 ${items.length}개의 소재를 표시하고 있습니다.` : `총 ${summary?.total ?? items.length}개의 콘텐츠 소재가 있습니다.`}</strong>{isLoading && items.length > 0 && <span role="status">새로고침 중…</span>}</div>
 
-      {registrationError && <section className="idea-state idea-error" role="alert"><div><strong>프로젝트 생성은 완료됐습니다.</strong><p>{registrationError}</p></div><button className="secondary-button" onClick={() => setRegistrationError(null)} type="button">확인</button></section>}
       {error && <section className="idea-state idea-error" role="alert"><div><strong>{errorTitle}</strong><p>{error}</p></div><button className="secondary-button" onClick={refetch} type="button">다시 시도</button></section>}
       {error && items.length === 0 ? null : isLoading && items.length === 0 ? (
         <section className="idea-state" role="status"><p>콘텐츠 소재를 불러오는 중입니다.</p></section>
       ) : items.length > 0 ? (
-        <ContentIdeaList convertingIds={convertingIds} deletingIds={deletingIds} items={items} onConvert={(idea) => { setRegistrationError(null); clearConversionError(); setConversionIdea(idea) }} onDelete={handleDelete} onEdit={setFormIdea} onMediaChanged={refetchSummary} projects={projects} updatingIds={updatingIds} />
+        <ContentIdeaList convertingIds={convertingIds} deletingIds={deletingIds} items={items} onConvert={(idea) => { clearConversionError(); setConversionIdea(idea) }} onDelete={handleDelete} onEdit={setFormIdea} onMediaChanged={refetchSummary} updatingIds={updatingIds} />
       ) : (
         <section className="idea-state idea-empty">
           <h2>{hasFilters ? '조건에 맞는 콘텐츠 소재가 없습니다.' : '등록된 콘텐츠 소재가 없습니다.'}</h2>

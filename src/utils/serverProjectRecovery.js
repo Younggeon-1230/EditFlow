@@ -27,7 +27,8 @@ export function createLocalProject(projectValues, options) {
 }
 
 export function createRecoveredLocalProject(serverProject, options) {
-  if (!isBackendProjectId(serverProject?.backendProjectId)) {
+  const backendProjectId = serverProject?.id ?? serverProject?.backendProjectId
+  if (!isBackendProjectId(backendProjectId)) {
     throw new TypeError('서버 프로젝트 ID는 양의 정수여야 합니다.')
   }
   const localProject = createLocalProject(

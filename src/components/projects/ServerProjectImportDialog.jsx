@@ -90,7 +90,7 @@ function ServerProjectImportDialog({
 
   async function restore(serverProject) {
     setAnnouncement('')
-    const restored = await onRestore(serverProject.backendProjectId)
+    const restored = await onRestore(serverProject.id)
     if (restored) {
       setAnnouncement(`${serverProject.title} 프로젝트를 이 브라우저에 연결했습니다.`)
       return
@@ -133,16 +133,16 @@ function ServerProjectImportDialog({
         ) : (
           <ul className="server-project-import-list" aria-label="서버 프로젝트 목록">
             {serverProjects.map((serverProject) => {
-              const mapped = localProjects.some((project) => project.backendProjectId === serverProject.backendProjectId)
-              const importing = restoringProjectIds.has(serverProject.backendProjectId)
+              const mapped = localProjects.some((project) => project.backendProjectId === serverProject.id)
+              const importing = restoringProjectIds.has(serverProject.id)
               const dday = getDday(serverProject.dueDate)
               return (
-                <li className="server-project-import-item" key={serverProject.backendProjectId}>
+                <li className="server-project-import-item" key={serverProject.id}>
                   <div className="server-project-import-copy">
                     <div><span className="project-status">{getProjectStatusLabel(serverProject.status)}</span><span>{serverProject.dueDate ? `마감일 ${serverProject.dueDate}` : '마감일 없음'}{dday ? ` · ${dday.label}` : ''}</span></div>
                     <strong>{serverProject.title}</strong>
                     <small>Reference {serverProject.referenceCount} · B-roll {serverProject.brollCount} · 체크리스트 {serverProject.checklistCompleted}/{serverProject.checklistTotal}</small>
-                    {restoreErrors[serverProject.backendProjectId] && <p className="server-project-import-error" role="alert">{restoreErrors[serverProject.backendProjectId]}</p>}
+                    {restoreErrors[serverProject.id] && <p className="server-project-import-error" role="alert">{restoreErrors[serverProject.id]}</p>}
                   </div>
                   <button className={mapped ? 'secondary-button' : 'primary-button'} disabled={mapped || importing} onClick={() => restore(serverProject)} type="button">{mapped ? '연결됨' : importing ? '가져오는 중…' : '가져오기'}</button>
                 </li>

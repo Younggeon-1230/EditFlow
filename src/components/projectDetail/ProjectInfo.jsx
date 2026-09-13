@@ -1,3 +1,5 @@
+import { getProjectStatusLabel } from '../../services/projectsApi.js'
+
 function ProjectInfo({
   project,
   disabled = false,
@@ -5,13 +7,14 @@ function ProjectInfo({
   onChangeStatus,
   onDelete,
 }) {
+  const dueDate = project.dueDate ?? project.deadline ?? ''
   return (
     <section className="project-info">
       <div className="project-info-main">
         <div className="project-info-labels">
-          <span className="project-status">{project.status}</span>
+          <span className="project-status">{getProjectStatusLabel(project.status)}</span>
           <span>
-            {project.deadline ? `마감일 ${project.deadline}` : '마감일 없음'}
+            {dueDate ? `마감일 ${dueDate}` : '마감일 없음'}
           </span>
         </div>
         <h1>{project.title}</h1>

@@ -6,6 +6,7 @@ export const ROUTES = {
   broll: '/broll',
   projects: '/projects',
   projectDetail: '/projects/:projectId',
+  localProjectDetail: '/projects/local/:localProjectId',
   checklist: '/checklist',
   ideas: '/ideas',
   ideaDetail: '/ideas/:ideaId',

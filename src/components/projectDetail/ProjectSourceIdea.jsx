@@ -3,8 +3,8 @@ import { CONTENT_IDEA_SOURCES } from '../../constants/contentIdeas.js'
 import { ROUTES } from '../../constants/app.js'
 import ContentIdeaStatusBadge from '../contentIdeas/ContentIdeaStatusBadge.jsx'
 
-function ProjectSourceIdea({ project, relation }) {
-  const usesBackend = Number.isInteger(project.backendProjectId) && project.backendProjectId > 0
+function ProjectSourceIdea({ projectKind = 'server', relation }) {
+  const usesBackend = projectKind === 'server'
 
   return (
     <section aria-labelledby="project-source-idea-title" className="project-source-idea relationship-card">
