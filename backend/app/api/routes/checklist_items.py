@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from app.api.dependencies import DevelopmentUserDependency, SessionDependency
+from app.api.dependencies import CurrentUserDependency, SessionDependency
 from app.api.routes.projects import OwnedProjectDependency
 from app.models.checklist_item import ChecklistItem
 from app.schemas.checklist_item import (
@@ -19,7 +19,7 @@ router = APIRouter(tags=["Checklist Items"])
 def get_owned_checklist_item_or_404(
     item_id: int,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> ChecklistItem:
     assert user.id is not None
     item = checklist_item_service.get_owned_checklist_item(

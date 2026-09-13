@@ -18,17 +18,9 @@ from app.services.csrf import (
     validate_csrf_tokens,
     validate_request_origin,
 )
-from app.services.users import ensure_development_user
 
 
 SessionDependency = Annotated[Session, Depends(get_session)]
-
-
-def get_development_user(session: SessionDependency) -> User:
-    return ensure_development_user(session)
-
-
-DevelopmentUserDependency = Annotated[User, Depends(get_development_user)]
 
 
 def get_external_http_client(request: Request) -> httpx.AsyncClient:
@@ -110,6 +102,15 @@ def enforce_csrf(
         return
 
     validate_request_origin(request, settings)
+    public_auth_paths = {"/api/auth/signup", "/api/auth/login"}
+    if context is None and request.url.path not in public_auth_paths:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "code": "authentication_required",
+                "message": "로그인이 필요합니다.",
+            },
+        )
     validate_csrf_tokens(
         request,
         settings,

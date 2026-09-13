@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from app.api.dependencies import DevelopmentUserDependency, SessionDependency
+from app.api.dependencies import CurrentUserDependency, SessionDependency
 from app.api.routes.content_ideas import OwnedContentIdeaDependency
 from app.models.content_idea_reference import ContentIdeaReference
 from app.schemas.content_idea_reference import (
@@ -19,7 +19,7 @@ router = APIRouter(tags=["Content Idea References"])
 def get_owned_reference_or_404(
     reference_id: int,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> ContentIdeaReference:
     assert user.id is not None
     reference = service.get_owned_content_idea_reference(session, user.id, reference_id)

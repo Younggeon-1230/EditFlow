@@ -1,4 +1,4 @@
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from pathlib import Path
 
 import pytest
@@ -18,6 +18,8 @@ from app.services.youtube import youtube_search_cache
 
 FRONTEND_ORIGIN = "http://127.0.0.1:5173"
 UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+TEST_USER_EMAIL = "authenticated@example.com"
+TEST_USER_PASSWORD = "authenticated test password"
 
 
 class CsrfTestClient(TestClient):
@@ -70,7 +72,7 @@ def test_engine(tmp_path: Path) -> Generator[Engine, None, None]:
 
 
 @pytest.fixture
-def client(test_engine: Engine) -> Generator[CsrfTestClient, None, None]:
+def anonymous_client(test_engine: Engine) -> Generator[CsrfTestClient, None, None]:
     def get_test_session() -> Generator[Session, None, None]:
         with Session(test_engine) as session:
             yield session
@@ -79,6 +81,38 @@ def client(test_engine: Engine) -> Generator[CsrfTestClient, None, None]:
     with CsrfTestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client(anonymous_client: CsrfTestClient) -> CsrfTestClient:
+    response = anonymous_client.post(
+        "/api/auth/signup",
+        json={"email": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD},
+    )
+    assert response.status_code == 201
+    return anonymous_client
+
+
+@pytest.fixture
+def authenticated_client_factory(
+    client: CsrfTestClient,
+) -> Generator[Callable[[str], CsrfTestClient], None, None]:
+    created_clients: list[CsrfTestClient] = []
+
+    def create(email: str) -> CsrfTestClient:
+        test_client = CsrfTestClient(app)
+        response = test_client.post(
+            "/api/auth/signup",
+            json={"email": email, "password": TEST_USER_PASSWORD},
+        )
+        assert response.status_code == 201
+        created_clients.append(test_client)
+        return test_client
+
+    yield create
+
+    for test_client in created_clients:
+        test_client.close()
 
 
 @pytest.fixture

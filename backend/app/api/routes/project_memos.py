@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from app.api.dependencies import DevelopmentUserDependency, SessionDependency
+from app.api.dependencies import CurrentUserDependency, SessionDependency
 from app.api.routes.projects import OwnedProjectDependency
 from app.models.project_memo import ProjectMemo
 from app.schemas.project_memo import (
@@ -19,7 +19,7 @@ router = APIRouter(tags=["Project Memos"])
 def get_owned_project_memo_or_404(
     memo_id: int,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> ProjectMemo:
     assert user.id is not None
     memo = project_memo_service.get_owned_project_memo(

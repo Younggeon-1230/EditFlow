@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from app.api.dependencies import DevelopmentUserDependency, SessionDependency
+from app.api.dependencies import CurrentUserDependency, SessionDependency
 from app.api.routes.content_ideas import OwnedContentIdeaDependency
 from app.models.content_idea_broll import ContentIdeaBroll
 from app.schemas.content_idea_broll import (
@@ -19,7 +19,7 @@ router = APIRouter(tags=["Content Idea B-rolls"])
 def get_owned_broll_or_404(
     broll_id: int,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> ContentIdeaBroll:
     assert user.id is not None
     broll = service.get_owned_content_idea_broll(session, user.id, broll_id)

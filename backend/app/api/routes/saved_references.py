@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from app.api.dependencies import DevelopmentUserDependency, SessionDependency
+from app.api.dependencies import CurrentUserDependency, SessionDependency
 from app.api.routes.projects import OwnedProjectDependency
 from app.models.saved_reference import SavedReference
 from app.schemas.saved_reference import (
@@ -19,7 +19,7 @@ router = APIRouter(tags=["Saved References"])
 def get_owned_saved_reference_or_404(
     reference_id: int,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> SavedReference:
     assert user.id is not None
     reference = saved_reference_service.get_owned_saved_reference(

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from app.api.dependencies import (
     ContentRecommendationProviderDependency,
-    DevelopmentUserDependency,
+    CurrentUserDependency,
     SessionDependency,
     SettingsDependency,
 )
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 def get_owned_content_idea_or_404(
     idea_id: int,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> ContentIdea:
     assert user.id is not None
     idea = content_idea_service.get_content_idea(
@@ -66,7 +66,7 @@ OwnedContentIdeaDependency = Annotated[
 @router.get("", response_model=list[ContentIdeaRead])
 def read_content_ideas(
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
     status_filter: Annotated[
         ContentIdeaStatus | None,
         Query(alias="status"),
@@ -93,7 +93,7 @@ def read_content_ideas(
 @router.get("/summary", response_model=ContentIdeaSummaryRead)
 def read_content_idea_summary(
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> ContentIdeaSummaryRead:
     assert user.id is not None
     return content_idea_service.get_content_idea_summary(session, user.id)
@@ -107,7 +107,7 @@ def read_content_idea_summary(
 def create_content_idea(
     idea_create: ContentIdeaCreate,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> ContentIdeaRead:
     assert user.id is not None
     return content_idea_service.create_content_idea(
@@ -124,7 +124,7 @@ def create_content_idea(
 async def recommend_content_ideas(
     recommendation_request: ContentIdeaRecommendationRequest,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
     provider: ContentRecommendationProviderDependency,
     settings: SettingsDependency,
 ) -> ContentIdeaRecommendationResponse:
@@ -184,7 +184,7 @@ async def recommend_content_ideas(
 def save_content_idea_recommendation(
     save_request: SaveContentIdeaRecommendationRequest,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
     settings: SettingsDependency,
 ) -> ContentIdeaRead:
     assert user.id is not None
@@ -217,7 +217,7 @@ def convert_content_idea_to_project(
     idea_id: int,
     conversion: ContentIdeaConversionCreate,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> ContentIdeaConversionRead:
     assert user.id is not None
     try:

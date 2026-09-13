@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from app.api.dependencies import DevelopmentUserDependency, SessionDependency
+from app.api.dependencies import CurrentUserDependency, SessionDependency
 from app.api.routes.projects import OwnedProjectDependency
 from app.models.saved_broll import SavedBroll
 from app.schemas.saved_broll import (
@@ -19,7 +19,7 @@ router = APIRouter(tags=["Saved B-rolls"])
 def get_owned_saved_broll_or_404(
     broll_id: int,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> SavedBroll:
     assert user.id is not None
     broll = saved_broll_service.get_owned_saved_broll(

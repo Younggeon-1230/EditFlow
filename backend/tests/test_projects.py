@@ -48,11 +48,12 @@ def test_development_user_is_ensured_idempotently(
     assert len(users) == 1
 
 
-def test_create_project_assigns_development_user(client: TestClient) -> None:
+def test_create_project_assigns_authenticated_user(client: TestClient) -> None:
     project = create_project(client, "  Launch video  ")
+    current_user = client.get("/api/auth/me").json()
 
     assert project["id"] > 0
-    assert project["user_id"] > 0
+    assert project["user_id"] == current_user["id"]
     assert project["title"] == "Launch video"
     assert project["status"] == "planning"
     assert project["due_date"] == "2026-08-01"
@@ -140,7 +141,7 @@ def test_project_responses_include_scoped_child_counts(
     assert updated["checklist_completed"] == 1
 
 
-def test_list_projects_returns_only_development_users_projects(
+def test_list_projects_returns_only_authenticated_users_projects(
     client: TestClient, test_engine: Engine
 ) -> None:
     first = create_project(client, "First")

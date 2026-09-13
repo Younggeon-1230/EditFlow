@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from app.api.dependencies import DevelopmentUserDependency, SessionDependency
+from app.api.dependencies import CurrentUserDependency, SessionDependency
 from app.models.project import Project
 from app.schemas.content_idea import ContentIdeaRead
 from app.schemas.project import ProjectCreate, ProjectRead, ProjectUpdate
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/projects", tags=["Projects"])
 def get_owned_project_or_404(
     project_id: int,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> Project:
     assert user.id is not None
     project = project_service.get_project(session, user.id, project_id)
@@ -30,7 +30,7 @@ OwnedProjectDependency = Annotated[Project, Depends(get_owned_project_or_404)]
 @router.get("", response_model=list[ProjectRead])
 def read_projects(
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> list[ProjectRead]:
     assert user.id is not None
     return project_service.list_projects(session, user.id)
@@ -40,7 +40,7 @@ def read_projects(
 def create_project(
     project_create: ProjectCreate,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
 ) -> ProjectRead:
     assert user.id is not None
     project = project_service.create_project(session, user.id, project_create)
@@ -53,7 +53,7 @@ def create_project(
 @router.get("/{project_id}", response_model=ProjectRead)
 def read_project(
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
     project: OwnedProjectDependency,
 ) -> ProjectRead:
     assert user.id is not None
@@ -69,7 +69,7 @@ def read_project(
 )
 def read_project_source_content_idea(
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
     project: OwnedProjectDependency,
 ) -> ContentIdeaRead | None:
     assert user.id is not None
@@ -85,7 +85,7 @@ def read_project_source_content_idea(
 def update_project(
     project_update: ProjectUpdate,
     session: SessionDependency,
-    user: DevelopmentUserDependency,
+    user: CurrentUserDependency,
     project: OwnedProjectDependency,
 ) -> ProjectRead:
     if not project_update.model_fields_set:

@@ -24,22 +24,22 @@ def test_database_engine_hides_bound_parameters_from_sql_logs() -> None:
 
 
 def _signup(
-    client: TestClient,
+    anonymous_client: TestClient,
     *,
     email: str = "person@example.com",
     password: str = VALID_PASSWORD,
 ):
-    return client.post(
+    return anonymous_client.post(
         "/api/auth/signup",
         json={"email": email, "password": password},
     )
 
 
 def test_signup_creates_normalized_active_user_session_and_secure_cookies(
-    client: TestClient,
+    anonymous_client: TestClient,
     test_engine,
 ) -> None:
-    response = _signup(client, email="  PERSON@Example.COM  ")
+    response = _signup(anonymous_client, email="  PERSON@Example.COM  ")
 
     assert response.status_code == 201
     assert set(response.json()) == {"id", "email", "created_at"}
@@ -59,8 +59,8 @@ def test_signup_creates_normalized_active_user_session_and_secure_cookies(
     assert "Max-Age=604800" in session_cookie_header
     assert "Secure" not in session_cookie_header
 
-    raw_session_token = client.cookies.get("editflow_session")
-    raw_csrf_token = client.cookies.get("editflow_csrf")
+    raw_session_token = anonymous_client.cookies.get("editflow_session")
+    raw_csrf_token = anonymous_client.cookies.get("editflow_csrf")
     assert raw_session_token is not None and len(raw_session_token) >= 43
     assert raw_csrf_token is not None and len(raw_csrf_token) >= 43
 
@@ -81,13 +81,13 @@ def test_signup_creates_normalized_active_user_session_and_secure_cookies(
         assert re.fullmatch(r"[0-9a-f]{64}", auth_session.token_digest)
         assert auth_session.expires_at - auth_session.created_at == timedelta(days=7)
 
-    assert client.get("/api/auth/me").status_code == 200
+    assert anonymous_client.get("/api/auth/me").status_code == 200
 
 
-def test_signup_rejects_canonical_duplicate(client: TestClient) -> None:
-    assert _signup(client, email="Owner@Example.com").status_code == 201
+def test_signup_rejects_canonical_duplicate(anonymous_client: TestClient) -> None:
+    assert _signup(anonymous_client, email="Owner@Example.com").status_code == 201
 
-    duplicate = _signup(client, email=" owner@example.COM ")
+    duplicate = _signup(anonymous_client, email=" owner@example.COM ")
 
     assert duplicate.status_code == 409
     assert duplicate.json()["detail"]["code"] == "email_already_registered"
@@ -101,11 +101,11 @@ def test_signup_rejects_canonical_duplicate(client: TestClient) -> None:
     ],
 )
 def test_signup_rejects_invalid_email(
-    client: TestClient,
+    anonymous_client: TestClient,
     email: str,
     expected_code: str,
 ) -> None:
-    response = _signup(client, email=email)
+    response = _signup(anonymous_client, email=email)
 
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == expected_code
@@ -116,10 +116,10 @@ def test_signup_rejects_invalid_email(
     ["a" * 11, "a" * 129, " " * 12],
 )
 def test_signup_rejects_invalid_password(
-    client: TestClient,
+    anonymous_client: TestClient,
     password: str,
 ) -> None:
-    response = _signup(client, password=password)
+    response = _signup(anonymous_client, password=password)
 
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "invalid_password"
@@ -128,22 +128,22 @@ def test_signup_rejects_invalid_password(
 
 @pytest.mark.parametrize("password", ["a" * 12, "한" * 128])
 def test_signup_accepts_password_boundaries(
-    client: TestClient,
+    anonymous_client: TestClient,
     password: str,
 ) -> None:
-    assert _signup(client, password=password).status_code == 201
+    assert _signup(anonymous_client, password=password).status_code == 201
 
 
-def test_password_whitespace_is_preserved(client: TestClient) -> None:
+def test_password_whitespace_is_preserved(anonymous_client: TestClient) -> None:
     password = "  keep these spaces  "
-    assert _signup(client, password=password).status_code == 201
-    assert client.post("/api/auth/logout").status_code == 204
+    assert _signup(anonymous_client, password=password).status_code == 201
+    assert anonymous_client.post("/api/auth/logout").status_code == 204
 
-    wrong = client.post(
+    wrong = anonymous_client.post(
         "/api/auth/login",
         json={"email": "person@example.com", "password": password.strip()},
     )
-    correct = client.post(
+    correct = anonymous_client.post(
         "/api/auth/login",
         json={"email": " PERSON@example.com ", "password": password},
     )
@@ -162,16 +162,16 @@ def test_password_helpers_hash_and_verify_without_plaintext_storage() -> None:
 
 
 def test_login_failure_is_generic_for_wrong_and_unknown_users(
-    client: TestClient,
+    anonymous_client: TestClient,
 ) -> None:
-    assert _signup(client).status_code == 201
-    assert client.post("/api/auth/logout").status_code == 204
+    assert _signup(anonymous_client).status_code == 201
+    assert anonymous_client.post("/api/auth/logout").status_code == 204
 
-    wrong_password = client.post(
+    wrong_password = anonymous_client.post(
         "/api/auth/login",
         json={"email": "person@example.com", "password": OTHER_PASSWORD},
     )
-    unknown_user = client.post(
+    unknown_user = anonymous_client.post(
         "/api/auth/login",
         json={"email": "unknown@example.com", "password": OTHER_PASSWORD},
     )
@@ -183,10 +183,10 @@ def test_login_failure_is_generic_for_wrong_and_unknown_users(
 
 
 def test_login_rejects_inactive_passwordless_legacy_user(
-    client: TestClient,
+    anonymous_client: TestClient,
     test_engine,
 ) -> None:
-    response = client.post(
+    response = anonymous_client.post(
         "/api/auth/login",
         json={"email": DEVELOPMENT_USER_EMAIL, "password": VALID_PASSWORD},
     )
@@ -202,7 +202,7 @@ def test_login_rejects_inactive_passwordless_legacy_user(
 
 
 def test_login_rejects_active_user_without_password_hash(
-    client: TestClient,
+    anonymous_client: TestClient,
     test_engine,
 ) -> None:
     with Session(test_engine) as session:
@@ -215,7 +215,7 @@ def test_login_rejects_active_user_without_password_hash(
         )
         session.commit()
 
-    response = client.post(
+    response = anonymous_client.post(
         "/api/auth/login",
         json={"email": "passwordless@example.com", "password": VALID_PASSWORD},
     )
@@ -225,21 +225,21 @@ def test_login_rejects_active_user_without_password_hash(
 
 
 def test_login_creates_an_additional_session_and_logout_revokes_only_current(
-    client: TestClient,
+    anonymous_client: TestClient,
     test_engine,
 ) -> None:
-    assert _signup(client).status_code == 201
-    first_token = client.cookies.get("editflow_session")
-    login_response = client.post(
+    assert _signup(anonymous_client).status_code == 201
+    first_token = anonymous_client.cookies.get("editflow_session")
+    login_response = anonymous_client.post(
         "/api/auth/login",
         json={"email": "person@example.com", "password": VALID_PASSWORD},
     )
-    second_token = client.cookies.get("editflow_session")
+    second_token = anonymous_client.cookies.get("editflow_session")
 
     assert login_response.status_code == 200
     assert first_token != second_token
-    assert client.post("/api/auth/logout").status_code == 204
-    assert client.get("/api/auth/me").status_code == 401
+    assert anonymous_client.post("/api/auth/logout").status_code == 204
+    assert anonymous_client.get("/api/auth/me").status_code == 401
 
     with Session(test_engine) as session:
         rows = session.exec(select(AuthSession)).all()
@@ -250,20 +250,20 @@ def test_login_creates_an_additional_session_and_logout_revokes_only_current(
 
 
 def test_me_rejects_missing_invalid_expired_revoked_and_inactive_sessions(
-    client: TestClient,
+    anonymous_client: TestClient,
     test_engine,
 ) -> None:
-    assert client.get("/api/auth/me").status_code == 401
-    client.cookies.set(
+    assert anonymous_client.get("/api/auth/me").status_code == 401
+    anonymous_client.cookies.set(
         "editflow_session",
         "invalid-session-token",
         domain="testserver.local",
         path="/",
     )
-    assert client.get("/api/auth/me").status_code == 401
+    assert anonymous_client.get("/api/auth/me").status_code == 401
 
-    assert _signup(client).status_code == 201
-    raw_token = client.cookies.get("editflow_session")
+    assert _signup(anonymous_client).status_code == 201
+    raw_token = anonymous_client.cookies.get("editflow_session")
     with Session(test_engine) as session:
         row = session.exec(
             select(AuthSession).where(
@@ -273,7 +273,7 @@ def test_me_rejects_missing_invalid_expired_revoked_and_inactive_sessions(
         row.expires_at = utc_now() - timedelta(seconds=1)
         session.add(row)
         session.commit()
-    assert client.get("/api/auth/me").status_code == 401
+    assert anonymous_client.get("/api/auth/me").status_code == 401
 
     with Session(test_engine) as session:
         row = session.exec(
@@ -285,7 +285,7 @@ def test_me_rejects_missing_invalid_expired_revoked_and_inactive_sessions(
         row.revoked_at = utc_now()
         session.add(row)
         session.commit()
-    assert client.get("/api/auth/me").status_code == 401
+    assert anonymous_client.get("/api/auth/me").status_code == 401
 
     with Session(test_engine) as session:
         row = session.exec(
@@ -299,37 +299,37 @@ def test_me_rejects_missing_invalid_expired_revoked_and_inactive_sessions(
         user.is_active = False
         session.add_all([row, user])
         session.commit()
-    response = client.get("/api/auth/me")
+    response = anonymous_client.get("/api/auth/me")
     assert response.status_code == 401
     assert response.json()["detail"]["code"] == "authentication_required"
 
 
-def test_logout_is_idempotent_and_clears_invalid_cookie(client: TestClient) -> None:
-    client.cookies.set(
+def test_logout_is_idempotent_and_clears_invalid_cookie(anonymous_client: TestClient) -> None:
+    anonymous_client.cookies.set(
         "editflow_session",
         "invalid-session-token",
         domain="testserver.local",
         path="/",
     )
 
-    first = client.post("/api/auth/logout")
-    second = client.post("/api/auth/logout")
+    first = anonymous_client.post("/api/auth/logout")
+    second = anonymous_client.post("/api/auth/logout")
 
     assert first.status_code == 204
     assert second.status_code == 204
-    assert client.cookies.get("editflow_session") is None
+    assert anonymous_client.cookies.get("editflow_session") is None
     assert "Max-Age=0" in first.headers.get("set-cookie", "")
 
 
-def test_login_rate_limit_is_scoped_to_ip_and_email(client: TestClient) -> None:
+def test_login_rate_limit_is_scoped_to_ip_and_email(anonymous_client: TestClient) -> None:
     for _ in range(5):
-        response = client.post(
+        response = anonymous_client.post(
             "/api/auth/login",
             json={"email": "limited@example.com", "password": VALID_PASSWORD},
         )
         assert response.status_code == 401
 
-    limited = client.post(
+    limited = anonymous_client.post(
         "/api/auth/login",
         json={"email": "limited@example.com", "password": VALID_PASSWORD},
     )
@@ -339,12 +339,12 @@ def test_login_rate_limit_is_scoped_to_ip_and_email(client: TestClient) -> None:
     assert int(limited.headers["retry-after"]) >= 1
 
 
-def test_signup_rate_limit_is_scoped_to_ip(client: TestClient) -> None:
+def test_signup_rate_limit_is_scoped_to_ip(anonymous_client: TestClient) -> None:
     for index in range(3):
-        response = _signup(client, email=f"person{index}@example.com")
+        response = _signup(anonymous_client, email=f"person{index}@example.com")
         assert response.status_code == 201
 
-    limited = _signup(client, email="person3@example.com")
+    limited = _signup(anonymous_client, email="person3@example.com")
 
     assert limited.status_code == 429
     assert limited.json()["detail"]["code"] == "rate_limited"

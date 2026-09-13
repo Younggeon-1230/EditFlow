@@ -359,6 +359,30 @@ def test_expired_and_other_user_tokens_are_distinct_errors(
     assert unsupported.json()["detail"]["code"] == "recommendation_token_invalid"
 
 
+def test_recommendation_token_is_bound_to_authenticated_user(
+    client: TestClient,
+    authenticated_client_factory,
+    configured_recommendations: StubProvider,
+) -> None:
+    other = authenticated_client_factory("recommendation-owner-b@example.com")
+    token = post_recommendations(client).json()["recommendations"][0]["save_token"]
+
+    rejected = other.post(
+        "/api/content-ideas/recommendations/save",
+        json={"save_token": token},
+    )
+
+    assert rejected.status_code == 400
+    assert rejected.json()["detail"]["code"] == "recommendation_token_user_mismatch"
+    assert other.get("/api/content-ideas").json() == []
+    saved = client.post(
+        "/api/content-ideas/recommendations/save",
+        json={"save_token": token},
+    )
+    assert saved.status_code == 201
+    assert saved.json()["user_id"] == client.get("/api/auth/me").json()["id"]
+
+
 @pytest.mark.parametrize(
     ("error", "status_code", "code"),
     [

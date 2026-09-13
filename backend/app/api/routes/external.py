@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.dependencies import (
+    CurrentUserDependency,
     ExternalHttpClientDependency,
     SettingsDependency,
 )
@@ -25,6 +26,7 @@ router = APIRouter(prefix="/api/external", tags=["External"])
 )
 async def search_youtube(
     search_params: Annotated[YouTubeSearchParams, Query()],
+    _user: CurrentUserDependency,
     client: ExternalHttpClientDependency,
     settings: SettingsDependency,
 ) -> YouTubeSearchResponse:
@@ -67,6 +69,7 @@ async def search_youtube(
 )
 async def search_pexels(
     search_params: Annotated[PexelsSearchParams, Query()],
+    _user: CurrentUserDependency,
     client: ExternalHttpClientDependency,
     settings: SettingsDependency,
 ) -> PexelsSearchResponse:
