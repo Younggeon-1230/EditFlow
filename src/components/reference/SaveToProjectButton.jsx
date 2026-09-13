@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
-import { STORAGE_KEYS } from '../../constants/app'
+import useUserStorageKey from '../../hooks/useUserStorageKey.js'
 
 function isBackendProjectId(value) {
   return Number.isInteger(value) && value > 0
 }
 
-function isVideoSaved(videoId) {
+function isVideoSaved(storageKey, videoId) {
+  if (!storageKey) return false
   try {
     const savedVideos = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.savedReferences) ?? '[]',
+      localStorage.getItem(storageKey) ?? '[]',
     )
     return Array.isArray(savedVideos)
       ? savedVideos.some((video) => video.id === videoId)
@@ -26,15 +27,16 @@ function SaveToProjectButton({
   idea,
   savedIdeaReferences,
 }) {
+  const storageKey = useUserStorageKey('savedReferences')
   const externalId = video.externalId ?? video.id
   const usesBackend = isBackendProjectId(project?.backendProjectId)
   const [isSavedLocally, setIsSavedLocally] = useState(() =>
-    isVideoSaved(video.id),
+    isVideoSaved(storageKey, video.id),
   )
 
   useEffect(() => {
-    setIsSavedLocally(isVideoSaved(video.id))
-  }, [project?.id, video.id])
+    setIsSavedLocally(isVideoSaved(storageKey, video.id))
+  }, [project?.id, storageKey, video.id])
 
   async function handleSave() {
     if (destinationType === 'idea') {
@@ -53,13 +55,13 @@ function SaveToProjectButton({
 
     try {
       const storedValue = JSON.parse(
-        localStorage.getItem(STORAGE_KEYS.savedReferences) ?? '[]',
+        localStorage.getItem(storageKey) ?? '[]',
       )
       const savedVideos = Array.isArray(storedValue) ? storedValue : []
 
       if (!savedVideos.some((savedVideo) => savedVideo.id === video.id)) {
         localStorage.setItem(
-          STORAGE_KEYS.savedReferences,
+          storageKey,
           JSON.stringify([
             ...savedVideos,
             { ...video, savedAt: new Date().toISOString() },

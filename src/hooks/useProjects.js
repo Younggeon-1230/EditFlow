@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { STORAGE_KEYS } from '../constants/app'
 import { ApiError } from '../services/apiClient.js'
 import initialProjects from '../data/initialProjects'
 import {
@@ -12,6 +11,7 @@ import {
 } from '../services/projectsApi.js'
 import { migrateLocalProjectsToBackend } from '../utils/projectMigration.js'
 import { removeStoredProjectMemos } from '../utils/projectMemosStorage.js'
+import useUserStorageKey from './useUserStorageKey.js'
 import {
   createLocalProject,
   createRecoveredLocalProject,
@@ -29,9 +29,10 @@ function normalizeLocalProject(project) {
   }
 }
 
-function loadProjects() {
+function loadProjects(storageKey) {
+  if (!storageKey) return initialProjects.map(normalizeLocalProject)
   try {
-    const storedProjects = localStorage.getItem(STORAGE_KEYS.projects)
+    const storedProjects = localStorage.getItem(storageKey)
     const source = storedProjects ? JSON.parse(storedProjects) : initialProjects
     return Array.isArray(source)
       ? source.map(normalizeLocalProject)
@@ -42,6 +43,7 @@ function loadProjects() {
 }
 
 function removeProjectFromKeyedStorage(storageKey, projectId) {
+  if (!storageKey) return
   try {
     const value = JSON.parse(localStorage.getItem(storageKey) ?? '{}')
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -55,13 +57,16 @@ function removeProjectFromKeyedStorage(storageKey, projectId) {
   }
 }
 
-function cleanupLocalProjectData(projectId) {
-  removeProjectFromKeyedStorage(STORAGE_KEYS.checklists, projectId)
-  removeStoredProjectMemos(projectId)
+function cleanupLocalProjectData(projectId, checklistStorageKey, memoStorageKey) {
+  removeProjectFromKeyedStorage(checklistStorageKey, projectId)
+  removeStoredProjectMemos(memoStorageKey, projectId)
 }
 
 function useProjects() {
-  const [projects, setProjects] = useState(loadProjects)
+  const projectsStorageKey = useUserStorageKey('projects')
+  const checklistStorageKey = useUserStorageKey('checklists')
+  const memoStorageKey = useUserStorageKey('projectMemos')
+  const [projects, setProjects] = useState(() => loadProjects(projectsStorageKey))
   const [searchTerm, setSearchTerm] = useState('')
   const [syncError, setSyncError] = useState(null)
   const [isCreating, setIsCreating] = useState(false)
@@ -77,12 +82,13 @@ function useProjects() {
 
   useEffect(() => {
     projectsRef.current = projects
+    if (!projectsStorageKey) return
     try {
-      localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(projects))
+      localStorage.setItem(projectsStorageKey, JSON.stringify(projects))
     } catch {
       // Keep the in-memory project list usable when browser storage is blocked.
     }
-  }, [projects])
+  }, [projects, projectsStorageKey])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -297,7 +303,7 @@ function useProjects() {
 
     setSyncError(null)
     if (!isBackendProjectId(existingProject.backendProjectId)) {
-      cleanupLocalProjectData(projectId)
+      cleanupLocalProjectData(projectId, checklistStorageKey, memoStorageKey)
       setProjects((currentProjects) =>
         currentProjects.filter((project) => project.id !== projectId),
       )
@@ -312,17 +318,17 @@ function useProjects() {
         controller.signal,
       )
       if (!isMounted.current) {
-        cleanupLocalProjectData(projectId)
+        cleanupLocalProjectData(projectId, checklistStorageKey, memoStorageKey)
         return true
       }
-      cleanupLocalProjectData(projectId)
+      cleanupLocalProjectData(projectId, checklistStorageKey, memoStorageKey)
       setProjects((currentProjects) =>
         currentProjects.filter((project) => project.id !== projectId),
       )
       return true
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
-        cleanupLocalProjectData(projectId)
+        cleanupLocalProjectData(projectId, checklistStorageKey, memoStorageKey)
         if (isMounted.current) {
           setProjects((currentProjects) =>
             currentProjects.filter((project) => project.id !== projectId),
@@ -351,7 +357,10 @@ function useProjects() {
     setIsMigrating(true)
     setSyncError(null)
     try {
-      const result = await migrateLocalProjectsToBackend({ projects })
+      const result = await migrateLocalProjectsToBackend({
+        projects,
+        storageKey: projectsStorageKey,
+      })
       if (!isMounted.current) {
         return result
       }
@@ -384,7 +393,7 @@ function useProjects() {
     const nextProjects = [syncedProject, ...projectsRef.current]
 
     try {
-      localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(nextProjects))
+      localStorage.setItem(projectsStorageKey, JSON.stringify(nextProjects))
     } catch {
       throw new Error(
         '프로젝트는 생성됐지만 화면 목록에 연결하지 못했습니다. 프로젝트 목록을 새로고침해 주세요.',

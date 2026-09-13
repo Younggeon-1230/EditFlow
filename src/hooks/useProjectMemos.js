@@ -10,6 +10,7 @@ import {
   loadStoredProjectMemos,
   persistProjectMemos,
 } from '../utils/projectMemosStorage.js'
+import useUserStorageKey from './useUserStorageKey.js'
 
 function isBackendProjectId(value) {
   return Number.isInteger(value) && value > 0
@@ -41,7 +42,10 @@ function sortMemos(items) {
 }
 
 function useProjectMemos(localProjectId, backendProjectId = null) {
-  const [localMemos, setLocalMemos] = useState(loadStoredProjectMemos)
+  const memoStorageKey = useUserStorageKey('projectMemos')
+  const [localMemos, setLocalMemos] = useState(() =>
+    loadStoredProjectMemos(memoStorageKey),
+  )
   const [serverItems, setServerItems] = useState([])
   const [itemsProjectId, setItemsProjectId] = useState(null)
   const [isLoadingState, setIsLoadingState] = useState(false)
@@ -174,7 +178,7 @@ function useProjectMemos(localProjectId, backendProjectId = null) {
         ...current,
         [localProjectId]: sortMemos(updater(currentItems)),
       }
-      persistProjectMemos(next)
+      persistProjectMemos(memoStorageKey, next)
       return next
     })
   }

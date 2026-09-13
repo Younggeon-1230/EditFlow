@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
-import { STORAGE_KEYS } from '../../constants/app'
+import useUserStorageKey from '../../hooks/useUserStorageKey.js'
 
 function isBackendProjectId(value) {
   return Number.isInteger(value) && value > 0
 }
 
-function isAssetSaved(assetId) {
+function isAssetSaved(storageKey, assetId) {
+  if (!storageKey) return false
   try {
     const savedAssets = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.savedBrolls) ?? '[]',
+      localStorage.getItem(storageKey) ?? '[]',
     )
     return Array.isArray(savedAssets)
       ? savedAssets.some((asset) => asset.id === assetId)
@@ -26,15 +27,16 @@ function SaveBrollButton({
   idea,
   savedIdeaBrolls,
 }) {
+  const storageKey = useUserStorageKey('savedBrolls')
   const externalId = asset.externalId ?? asset.id
   const usesBackend = isBackendProjectId(project?.backendProjectId)
   const [isSavedLocally, setIsSavedLocally] = useState(() =>
-    isAssetSaved(asset.id),
+    isAssetSaved(storageKey, asset.id),
   )
 
   useEffect(() => {
-    setIsSavedLocally(isAssetSaved(asset.id))
-  }, [asset.id, project?.id])
+    setIsSavedLocally(isAssetSaved(storageKey, asset.id))
+  }, [asset.id, project?.id, storageKey])
 
   async function handleSave() {
     if (destinationType === 'idea') {
@@ -53,13 +55,13 @@ function SaveBrollButton({
 
     try {
       const storedValue = JSON.parse(
-        localStorage.getItem(STORAGE_KEYS.savedBrolls) ?? '[]',
+        localStorage.getItem(storageKey) ?? '[]',
       )
       const savedAssets = Array.isArray(storedValue) ? storedValue : []
 
       if (!savedAssets.some((savedAsset) => savedAsset.id === asset.id)) {
         localStorage.setItem(
-          STORAGE_KEYS.savedBrolls,
+          storageKey,
           JSON.stringify([
             ...savedAssets,
             { ...asset, savedAt: new Date().toISOString() },

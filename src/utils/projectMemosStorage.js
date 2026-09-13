@@ -1,9 +1,8 @@
-import { STORAGE_KEYS } from '../constants/app.js'
-
-export function loadStoredProjectMemos() {
+export function loadStoredProjectMemos(storageKey) {
+  if (!storageKey) return {}
   try {
     const parsed = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.projectMemos) ?? '{}',
+      localStorage.getItem(storageKey) ?? '{}',
     )
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
       ? parsed
@@ -13,10 +12,11 @@ export function loadStoredProjectMemos() {
   }
 }
 
-export function persistProjectMemos(memosByProject) {
+export function persistProjectMemos(storageKey, memosByProject) {
+  if (!storageKey) return
   try {
     localStorage.setItem(
-      STORAGE_KEYS.projectMemos,
+      storageKey,
       JSON.stringify(memosByProject),
     )
   } catch {
@@ -24,12 +24,12 @@ export function persistProjectMemos(memosByProject) {
   }
 }
 
-export function removeStoredProjectMemos(projectId) {
-  const memosByProject = loadStoredProjectMemos()
+export function removeStoredProjectMemos(storageKey, projectId) {
+  const memosByProject = loadStoredProjectMemos(storageKey)
   if (!Object.prototype.hasOwnProperty.call(memosByProject, projectId)) {
     return
   }
   const next = { ...memosByProject }
   delete next[projectId]
-  persistProjectMemos(next)
+  persistProjectMemos(storageKey, next)
 }

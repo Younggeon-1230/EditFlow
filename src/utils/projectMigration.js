@@ -1,4 +1,3 @@
-import { STORAGE_KEYS } from '../constants/app.js'
 import {
   createProject,
   mergeBackendProject,
@@ -8,10 +7,11 @@ function isBackendProjectId(value) {
   return Number.isInteger(value) && value > 0
 }
 
-function loadStoredProjects() {
+function loadStoredProjects(storageKey) {
+  if (!storageKey) return []
   try {
     const storedProjects = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.projects) ?? '[]',
+      localStorage.getItem(storageKey) ?? '[]',
     )
     return Array.isArray(storedProjects) ? storedProjects : []
   } catch {
@@ -19,15 +19,16 @@ function loadStoredProjects() {
   }
 }
 
-function persistProjects(projects) {
+function persistProjects(storageKey, projects) {
+  if (!storageKey) return
   try {
-    localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(projects))
+    localStorage.setItem(storageKey, JSON.stringify(projects))
   } catch {
     // The caller still receives the migrated in-memory projects for retry.
   }
 }
 
-export function getProjectMigrationStatus(projects = loadStoredProjects()) {
+export function getProjectMigrationStatus(projects = []) {
   return projects.reduce(
     (status, project) => {
       if (isBackendProjectId(project.backendProjectId)) {
@@ -76,7 +77,8 @@ export async function migrateSingleProjectToBackend(
 }
 
 export async function migrateLocalProjectsToBackend({
-  projects = loadStoredProjects(),
+  storageKey,
+  projects = loadStoredProjects(storageKey),
   createProjectRequest = createProject,
 } = {}) {
   let nextProjects = [...projects]
@@ -110,7 +112,7 @@ export async function migrateLocalProjectsToBackend({
 
     nextProjects[index] = migration.project
     result.migrated += 1
-    persistProjects(nextProjects)
+    persistProjects(storageKey, nextProjects)
   }
 
   return {

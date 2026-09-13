@@ -1,4 +1,3 @@
-import { STORAGE_KEYS } from '../constants/app.js'
 import {
   createChecklistItem,
   getChecklistItems,
@@ -13,14 +12,14 @@ function isBackendProjectId(value) {
   return Number.isInteger(value) && value > 0
 }
 
-export function getLocalChecklistItems(localProjectId) {
-  if (!localProjectId) {
+export function getLocalChecklistItems(localProjectId, storageKey) {
+  if (!localProjectId || !storageKey) {
     return []
   }
 
   try {
     const stored = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.checklists) ?? '{}',
+      localStorage.getItem(storageKey) ?? '{}',
     )
     return stored &&
       typeof stored === 'object' &&
@@ -37,6 +36,7 @@ export async function getChecklistMigrationStatus({
   localProjectId,
   backendProjectId,
   localItems: providedLocalItems,
+  storageKey,
   signal,
 }) {
   if (!isBackendProjectId(backendProjectId)) {
@@ -45,7 +45,7 @@ export async function getChecklistMigrationStatus({
 
   const localItems = Array.isArray(providedLocalItems)
     ? providedLocalItems.map((item) => ({ ...item }))
-    : getLocalChecklistItems(localProjectId)
+    : getLocalChecklistItems(localProjectId, storageKey)
   const serverItems = await getChecklistItems(backendProjectId, signal)
 
   return {
@@ -61,6 +61,7 @@ export async function migrateProjectChecklistToBackend({
   localProjectId,
   backendProjectId,
   localItems: providedLocalItems,
+  storageKey,
   signal,
 }) {
   if (!isBackendProjectId(backendProjectId)) {
@@ -69,7 +70,7 @@ export async function migrateProjectChecklistToBackend({
 
   const localItems = Array.isArray(providedLocalItems)
     ? providedLocalItems.map((item) => ({ ...item }))
-    : getLocalChecklistItems(localProjectId)
+    : getLocalChecklistItems(localProjectId, storageKey)
   const serverItems = await getChecklistItems(backendProjectId, signal)
   const result = {
     total: localItems.length,

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { STORAGE_KEYS } from '../constants/app.js'
 import initialChecklist, {
   defaultChecklistTemplate,
 } from '../data/initialChecklist.js'
@@ -11,14 +10,16 @@ import {
   updateChecklistItem,
 } from '../services/checklistItemsApi.js'
 import { migrateProjectChecklistToBackend } from '../utils/checklistMigration.js'
+import useUserStorageKey from './useUserStorageKey.js'
 
 function isBackendProjectId(value) {
   return Number.isInteger(value) && value > 0
 }
 
-function loadChecklists() {
+function loadChecklists(storageKey) {
+  if (!storageKey) return initialChecklist
   try {
-    const storedChecklists = localStorage.getItem(STORAGE_KEYS.checklists)
+    const storedChecklists = localStorage.getItem(storageKey)
 
     if (!storedChecklists) {
       return initialChecklist
@@ -35,9 +36,10 @@ function loadChecklists() {
   }
 }
 
-function persistChecklists(checklists) {
+function persistChecklists(storageKey, checklists) {
+  if (!storageKey) return
   try {
-    localStorage.setItem(STORAGE_KEYS.checklists, JSON.stringify(checklists))
+    localStorage.setItem(storageKey, JSON.stringify(checklists))
   } catch {
     // Keep local checklist editing available in memory when storage is blocked.
   }
@@ -101,7 +103,8 @@ function getChangedFields(item, changes) {
 }
 
 function useChecklist(projectId, backendProjectId = null) {
-  const [checklists, setChecklists] = useState(loadChecklists)
+  const checklistStorageKey = useUserStorageKey('checklists')
+  const [checklists, setChecklists] = useState(() => loadChecklists(checklistStorageKey))
   const [serverItems, setServerItems] = useState([])
   const [itemsBackendProjectId, setItemsBackendProjectId] = useState(null)
   const [isLoadingState, setIsLoadingState] = useState(false)
@@ -250,7 +253,7 @@ function useChecklist(projectId, backendProjectId = null) {
         ...currentChecklists,
         [targetProjectId]: updateItems(currentItems),
       }
-      persistChecklists(nextChecklists)
+      persistChecklists(checklistStorageKey, nextChecklists)
       return nextChecklists
     })
   }
@@ -608,6 +611,7 @@ function useChecklist(projectId, backendProjectId = null) {
         localProjectId: projectId,
         backendProjectId: targetBackendProjectId,
         localItems,
+        storageKey: checklistStorageKey,
         signal: controller.signal,
       })
       if (
