@@ -2,6 +2,7 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+from sqlalchemy.engine import make_url
 from sqlmodel import SQLModel
 
 import app.models  # noqa: F401  # Register model exports with SQLModel.metadata.
@@ -18,7 +19,7 @@ database_url = get_settings().database_url
 config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 target_metadata = SQLModel.metadata
-render_as_batch = database_url.startswith("sqlite")
+render_as_batch = make_url(database_url).get_backend_name() == "sqlite"
 
 
 def run_migrations_offline() -> None:

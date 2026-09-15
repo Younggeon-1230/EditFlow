@@ -1,8 +1,7 @@
-from datetime import timezone
-
 from fastapi import Response
 
 from app.core.config import Settings
+from app.core.datetime import as_utc
 from app.services.auth import AuthResult
 
 
@@ -11,11 +10,7 @@ def set_auth_cookies(
     result: AuthResult,
     settings: Settings,
 ) -> None:
-    expires_at = result.auth_session.expires_at
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    else:
-        expires_at = expires_at.astimezone(timezone.utc)
+    expires_at = as_utc(result.auth_session.expires_at)
     common = {
         "max_age": settings.auth_session_ttl_seconds,
         "expires": expires_at,

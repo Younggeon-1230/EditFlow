@@ -1,6 +1,6 @@
 import hashlib
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,9 +8,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.database import engine
+from app.core.datetime import utc_now
 from app.models.auth_session import AuthSession
-from app.models.user import User, utc_now
-from app.services.auth import token_digest
+from app.models.user import User
+from app.services.auth import lookup_auth_context, token_digest
 from app.services.passwords import hash_password, verify_password
 from app.services.users import DEVELOPMENT_USER_EMAIL
 
@@ -302,6 +303,38 @@ def test_me_rejects_missing_invalid_expired_revoked_and_inactive_sessions(
     response = anonymous_client.get("/api/auth/me")
     assert response.status_code == 401
     assert response.json()["detail"]["code"] == "authentication_required"
+
+
+@pytest.mark.parametrize(
+    ("now", "is_valid"),
+    [
+        (datetime(2026, 9, 15, 11, 59, 59, 999999, tzinfo=timezone.utc), True),
+        (datetime(2026, 9, 15, 12, 0, tzinfo=timezone.utc), False),
+        (datetime(2026, 9, 15, 12, 0, 0, 1, tzinfo=timezone.utc), False),
+        (datetime(2026, 9, 15, 21, 0, tzinfo=timezone(timedelta(hours=9))), False),
+    ],
+)
+def test_session_expiration_boundary_is_absolute_utc(
+    anonymous_client: TestClient,
+    test_engine,
+    now: datetime,
+    is_valid: bool,
+) -> None:
+    assert _signup(anonymous_client).status_code == 201
+    raw_token = anonymous_client.cookies.get("editflow_session")
+    expiration = datetime(2026, 9, 15, 12, 0, tzinfo=timezone.utc)
+    with Session(test_engine) as session:
+        row = session.exec(
+            select(AuthSession).where(
+                AuthSession.token_digest == token_digest(raw_token)
+            )
+        ).one()
+        row.expires_at = expiration
+        session.add(row)
+        session.commit()
+        context = lookup_auth_context(session, raw_token, now=now)
+
+    assert (context is not None) is is_valid
 
 
 def test_logout_is_idempotent_and_clears_invalid_cookie(anonymous_client: TestClient) -> None:

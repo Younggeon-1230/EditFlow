@@ -3,12 +3,11 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import event
 from sqlalchemy.engine import Engine
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, SQLModel
 
 import app.models  # noqa: F401
-from app.core.database import get_session
+from app.core.database import create_db_engine, get_session
 from app.main import app
 from app.services.auth import auth_rate_limiter
 from app.services.content_idea_recommendations import recommendation_runtime_state
@@ -55,16 +54,9 @@ def clear_external_search_caches() -> Generator[None, None, None]:
 @pytest.fixture
 def test_engine(tmp_path: Path) -> Generator[Engine, None, None]:
     database_path = tmp_path / "test.db"
-    engine = create_engine(
+    engine = create_db_engine(
         f"sqlite:///{database_path.as_posix()}",
-        connect_args={"check_same_thread": False},
-    )
-    event.listen(
-        engine,
-        "connect",
-        lambda dbapi_connection, _: dbapi_connection.execute(
-            "PRAGMA foreign_keys=ON"
-        ),
+        environment="test",
     )
     SQLModel.metadata.create_all(engine)
     yield engine

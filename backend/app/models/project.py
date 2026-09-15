@@ -1,10 +1,10 @@
 from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import Column, DateTime, String, UniqueConstraint
+from sqlalchemy import Column, String, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
-from app.models.user import utc_now
+from app.core.datetime import UTCDateTime, utc_now
 
 
 class ProjectStatus(StrEnum):
@@ -46,9 +46,9 @@ class Project(SQLModel, table=True):
     due_date: date | None = None
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )

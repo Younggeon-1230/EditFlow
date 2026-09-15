@@ -8,7 +8,7 @@ from app.models.project import Project
 from app.models.project_memo import ProjectMemo
 from app.models.saved_broll import SavedBroll
 from app.models.saved_reference import SavedReference
-from app.models.user import utc_now
+from app.core.datetime import utc_now
 from app.schemas.content_idea import ContentIdeaRead
 from app.schemas.project import (
     LocalProjectImport,

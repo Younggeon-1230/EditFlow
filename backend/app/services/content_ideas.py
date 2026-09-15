@@ -17,7 +17,7 @@ from app.models.content_idea_broll import ContentIdeaBroll
 from app.models.content_idea_reference import ContentIdeaReference
 from app.models.checklist_item import ChecklistItem
 from app.models.project_memo import ProjectMemo
-from app.models.user import utc_now
+from app.core.datetime import utc_now
 from app.models.project import Project
 from app.models.saved_broll import SavedBroll
 from app.models.saved_reference import SavedReference

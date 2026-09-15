@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 
 from app.models.project import Project
 from app.models.saved_reference import SavedReference
-from app.models.user import utc_now
+from app.core.datetime import utc_now
 from app.schemas.saved_reference import (
     SavedReferenceCreate,
     SavedReferenceUpdate,

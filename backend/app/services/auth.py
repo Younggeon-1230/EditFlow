@@ -4,15 +4,16 @@ import threading
 import time
 from collections import OrderedDict, deque
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from email_validator import EmailNotValidError, validate_email
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.config import Settings
+from app.core.datetime import as_utc, utc_now
 from app.models.auth_session import AuthSession
-from app.models.user import User, utc_now
+from app.models.user import User
 from app.services.passwords import hash_password, verify_dummy_password, verify_password
 
 
@@ -205,7 +206,7 @@ def lookup_auth_context(
         return None
 
     current_time = now or utc_now()
-    if _as_utc(auth_session.expires_at) <= _as_utc(current_time):
+    if as_utc(auth_session.expires_at) <= as_utc(current_time):
         return None
 
     user = session.get(User, auth_session.user_id)
@@ -245,9 +246,3 @@ def _build_auth_session(
 def _verify_dummy_and_return_false(password: str) -> bool:
     verify_dummy_password(password)
     return False
-
-
-def _as_utc(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)

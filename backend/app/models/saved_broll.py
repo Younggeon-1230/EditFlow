@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer, String, UniqueConstraint, text
+from sqlalchemy import Column, Integer, String, UniqueConstraint, text
 from sqlmodel import Field, SQLModel
 
-from app.models.user import utc_now
+from app.core.datetime import UTCDateTime, utc_now
 
 
 class SavedBroll(SQLModel, table=True):
@@ -64,9 +64,9 @@ class SavedBroll(SQLModel, table=True):
     )
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )

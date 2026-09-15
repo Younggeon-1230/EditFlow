@@ -1,10 +1,10 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text, text
+from sqlalchemy import Column, ForeignKey, Index, Integer, String, Text, text
 from sqlmodel import Field, SQLModel
 
-from app.models.user import utc_now
+from app.core.datetime import UTCDateTime, utc_now
 
 
 class ContentPlatform(StrEnum):
@@ -103,9 +103,9 @@ class ContentIdea(SQLModel, table=True):
     )
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )

@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy import Column, ForeignKey, Index, Integer, String
 from sqlmodel import Field, SQLModel
 
-from app.models.user import utc_now
+from app.core.datetime import UTCDateTime, utc_now
 
 
 class AuthSession(SQLModel, table=True):
@@ -34,12 +34,12 @@ class AuthSession(SQLModel, table=True):
     )
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )
     expires_at: datetime = Field(
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(UTCDateTime(), nullable=False)
     )
     revoked_at: datetime | None = Field(
         default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True),
+        sa_column=Column(UTCDateTime(), nullable=True),
     )

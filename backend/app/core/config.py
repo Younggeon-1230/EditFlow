@@ -3,6 +3,8 @@ from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
 
 
 class Settings(BaseSettings):
@@ -71,6 +73,20 @@ class Settings(BaseSettings):
         if any(not origin or origin == "*" for origin in origins):
             raise ValueError("FRONTEND_ORIGINS cannot contain empty or wildcard origins")
         return origins
+
+    @field_validator("database_url")
+    @classmethod
+    def validate_database_url(cls, value: str) -> str:
+        try:
+            url = make_url(value)
+        except ArgumentError as error:
+            raise ValueError("DATABASE_URL must be a valid SQLAlchemy URL") from error
+        backend = url.get_backend_name()
+        if backend not in {"sqlite", "postgresql"}:
+            raise ValueError("DATABASE_URL must use SQLite or PostgreSQL")
+        if backend == "postgresql" and url.get_driver_name() != "psycopg":
+            raise ValueError("PostgreSQL DATABASE_URL must use postgresql+psycopg")
+        return value
 
 
 @lru_cache

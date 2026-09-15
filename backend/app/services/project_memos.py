@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 
 from app.models.project import Project
 from app.models.project_memo import ProjectMemo
-from app.models.user import utc_now
+from app.core.datetime import utc_now
 from app.schemas.project_memo import ProjectMemoCreate, ProjectMemoUpdate
 
 

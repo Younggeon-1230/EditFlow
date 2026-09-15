@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, false
+from sqlalchemy import Boolean, Column, Integer, String, false
 from sqlmodel import Field, SQLModel
 
-from app.models.user import utc_now
+from app.core.datetime import UTCDateTime, utc_now
 
 
 class ChecklistItem(SQLModel, table=True):
@@ -28,9 +28,9 @@ class ChecklistItem(SQLModel, table=True):
     position: int = Field(sa_column=Column(Integer, nullable=False))
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )

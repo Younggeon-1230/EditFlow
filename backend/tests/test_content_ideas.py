@@ -6,7 +6,8 @@ from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 
 from app.models.content_idea import ContentIdea, ContentIdeaSource
-from app.models.user import User, utc_now
+from app.core.datetime import utc_now
+from app.models.user import User
 
 
 def create_idea(

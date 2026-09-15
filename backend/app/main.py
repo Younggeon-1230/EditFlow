@@ -13,13 +13,18 @@ from app.services.users import ensure_development_user
 settings = get_settings()
 
 
+def should_ensure_development_user(environment: str) -> bool:
+    return environment.casefold() == "development"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     session_provider = app.dependency_overrides.get(get_session, get_session)
     session_generator = session_provider()
     try:
         session = next(session_generator)
-        ensure_development_user(session)
+        if should_ensure_development_user(settings.environment):
+            ensure_development_user(session)
     finally:
         session_generator.close()
     timeout = httpx.Timeout(settings.external_api_timeout_seconds)

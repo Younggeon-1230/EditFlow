@@ -1,11 +1,9 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, String, true
+from sqlalchemy import Boolean, Column, String, true
 from sqlmodel import Field, SQLModel
 
-
-def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+from app.core.datetime import UTCDateTime, utc_now
 
 
 class User(SQLModel, table=True):
@@ -29,9 +27,9 @@ class User(SQLModel, table=True):
     )
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )

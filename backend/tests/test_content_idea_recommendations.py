@@ -27,7 +27,11 @@ from app.providers.llm.base import (
 )
 from app.providers.llm.openai_provider import OpenAIContentRecommendationProvider
 from app.schemas.content_idea_recommendation import RecommendationTokenPayload
-from app.services.content_idea_recommendations import sign_save_token
+from app.services.content_idea_recommendations import (
+    RecommendationServiceError,
+    sign_save_token,
+    verify_save_token,
+)
 
 
 SECRET = "test-signing-secret-that-is-longer-than-32-bytes"
@@ -331,6 +335,24 @@ def _token(user_id: int, issued_at: int, expires_at: int) -> str:
         ),
         SECRET,
     )
+
+
+@pytest.mark.parametrize(
+    ("now", "is_valid"),
+    [(199, True), (200, False), (201, False)],
+)
+def test_save_token_expiration_boundary_uses_epoch_seconds(
+    now: int,
+    is_valid: bool,
+) -> None:
+    token = _token(1, 100, 200)
+    if is_valid:
+        assert verify_save_token(token, SECRET, 1, now=now).expires_at == 200
+        return
+
+    with pytest.raises(RecommendationServiceError) as error:
+        verify_save_token(token, SECRET, 1, now=now)
+    assert error.value.code == "recommendation_token_expired"
 
 
 def test_expired_and_other_user_tokens_are_distinct_errors(

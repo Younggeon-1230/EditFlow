@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 
 from app.models.content_idea import ContentIdea
 from app.models.content_idea_reference import ContentIdeaReference
-from app.models.user import utc_now
+from app.core.datetime import utc_now
 from app.schemas.content_idea_reference import (
     ContentIdeaReferenceCreate,
     ContentIdeaReferenceUpdate,

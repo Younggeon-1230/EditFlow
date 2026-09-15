@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, String, UniqueConstraint, text
+from sqlalchemy import Column, String, UniqueConstraint, text
 from sqlmodel import Field, SQLModel
 
-from app.models.user import utc_now
+from app.core.datetime import UTCDateTime, utc_now
 
 
 class ContentIdeaReference(SQLModel, table=True):
@@ -30,13 +30,13 @@ class ContentIdeaReference(SQLModel, table=True):
     url: str = Field(sa_column=Column(String(2048), nullable=False))
     thumbnail_url: str | None = Field(default=None, sa_column=Column(String(2048)))
     channel_title: str | None = Field(default=None, sa_column=Column(String(500)))
-    published_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))
+    published_at: datetime | None = Field(default=None, sa_column=Column(UTCDateTime()))
     note: str | None = Field(default=None, sa_column=Column(String(5000)))
     created_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )

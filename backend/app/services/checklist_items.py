@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 
 from app.models.checklist_item import ChecklistItem
 from app.models.project import Project
-from app.models.user import utc_now
+from app.core.datetime import utc_now
 from app.schemas.checklist_item import ChecklistItemCreate, ChecklistItemUpdate
 
 

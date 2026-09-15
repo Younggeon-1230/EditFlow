@@ -8,7 +8,8 @@ from sqlmodel import Session, select
 from app.models.content_idea import ContentIdea
 from app.models.content_idea_broll import ContentIdeaBroll
 from app.models.content_idea_reference import ContentIdeaReference
-from app.models.user import User, utc_now
+from app.core.datetime import utc_now
+from app.models.user import User
 
 
 def create_idea(client: TestClient, title: str, **fields: object) -> dict:
