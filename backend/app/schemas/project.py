@@ -5,6 +5,8 @@ from pydantic import ConfigDict, model_validator
 from sqlmodel import Field, SQLModel
 
 from app.models.project import ProjectStatus
+from app.schemas.checklist_item import ChecklistItemBase
+from app.schemas.project_memo import ProjectMemoCreate
 
 
 class ProjectBase(SQLModel):
@@ -19,6 +21,26 @@ class ProjectBase(SQLModel):
 
 class ProjectCreate(ProjectBase):
     pass
+
+
+class LocalProjectImportChecklistItem(ChecklistItemBase):
+    position: int = Field(ge=0)
+
+
+class LocalProjectImportMemo(ProjectMemoCreate):
+    position: int = Field(ge=0)
+
+
+class LocalProjectImport(ProjectBase):
+    source_local_id: str = Field(min_length=1, max_length=200)
+    checklist_items: list[LocalProjectImportChecklistItem] = Field(
+        default_factory=list,
+        max_length=500,
+    )
+    memos: list[LocalProjectImportMemo] = Field(
+        default_factory=list,
+        max_length=100,
+    )
 
 
 class ProjectUpdate(SQLModel):

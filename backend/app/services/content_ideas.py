@@ -516,7 +516,7 @@ def convert_content_idea_to_project(
     return (
         ProjectRead.model_validate(
             {
-                **project.model_dump(),
+                **project.model_dump(exclude={"source_local_id"}),
                 "reference_count": len(idea_references),
                 "broll_count": len(idea_brolls),
                 "checklist_total": len(checklist_items),

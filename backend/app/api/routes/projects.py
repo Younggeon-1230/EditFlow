@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from app.api.dependencies import CurrentUserDependency, SessionDependency
 from app.models.project import Project
 from app.schemas.content_idea import ContentIdeaRead
-from app.schemas.project import ProjectCreate, ProjectRead, ProjectUpdate
+from app.schemas.project import (
+    LocalProjectImport,
+    ProjectCreate,
+    ProjectRead,
+    ProjectUpdate,
+)
 from app.services import projects as project_service
 
 
@@ -48,6 +53,29 @@ def create_project(
     summary = project_service.get_project_summary(session, user.id, project.id)
     assert summary is not None
     return summary
+
+
+@router.post(
+    "/import-local",
+    response_model=ProjectRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def import_local_project(
+    import_data: LocalProjectImport,
+    response: Response,
+    session: SessionDependency,
+    user: CurrentUserDependency,
+) -> ProjectRead:
+    assert user.id is not None
+    project, created = project_service.import_local_project(
+        session,
+        user.id,
+        import_data,
+    )
+    response.status_code = (
+        status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    )
+    return project
 
 
 @router.get("/{project_id}", response_model=ProjectRead)

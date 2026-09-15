@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import Column, DateTime, String
+from sqlalchemy import Column, DateTime, String, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from app.models.user import utc_now
@@ -16,9 +16,20 @@ class ProjectStatus(StrEnum):
 
 class Project(SQLModel, table=True):
     __tablename__ = "projects"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "source_local_id",
+            name="uq_projects_user_source_local_id",
+        ),
+    )
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)
+    source_local_id: str | None = Field(
+        default=None,
+        sa_column=Column(String(200), nullable=True),
+    )
     title: str = Field(sa_column=Column(String(200), nullable=False))
     description: str | None = Field(
         default=None,
