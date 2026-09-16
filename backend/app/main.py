@@ -3,10 +3,12 @@ from contextlib import asynccontextmanager
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.database import get_session
+from app.core.http import request_context_middleware, unexpected_exception_handler
 from app.services.users import ensure_development_user
 
 
@@ -45,12 +47,21 @@ app = FastAPI(
 )
 
 app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=settings.trusted_hosts,
+)
+
+app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.frontend_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", settings.auth_csrf_header_name],
 )
+
+# Register last so request IDs and access logs wrap every application response.
+app.middleware("http")(request_context_middleware)
+app.add_exception_handler(Exception, unexpected_exception_handler)
 
 app.include_router(api_router)
 
@@ -60,5 +71,5 @@ def root() -> dict[str, str]:
     return {
         "message": "EditFlow API",
         "docs": "/docs",
-        "health": "/health",
+        "health": "/health/live",
     }

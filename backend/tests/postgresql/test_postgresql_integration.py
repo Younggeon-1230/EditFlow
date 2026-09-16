@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 
 from app.core.datetime import utc_now
 from app.core.config import Settings
+from app.core.database import create_db_engine
 from app.models.auth_session import AuthSession
 from app.models.checklist_item import ChecklistItem
 from app.models.content_idea import ContentIdea, ContentIdeaStatus, ContentPlatform
@@ -33,6 +34,32 @@ from app.services.content_idea_recommendations import (
 
 
 pytestmark = pytest.mark.postgresql
+
+
+def test_readiness_uses_live_postgresql(raw_client: TestClient) -> None:
+    response = raw_client.get("/health/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_production_pool_connects_to_live_postgresql(
+    postgresql_database_url: str,
+) -> None:
+    engine = create_db_engine(
+        postgresql_database_url,
+        environment="production",
+        pool_size=2,
+        max_overflow=1,
+        pool_timeout=5,
+        pool_recycle=300,
+    )
+    try:
+        with engine.connect() as connection:
+            assert connection.execute(text("SELECT 1")).scalar_one() == 1
+        assert engine.pool.size() == 2
+    finally:
+        engine.dispose()
 
 
 def _user(email: str) -> User:
