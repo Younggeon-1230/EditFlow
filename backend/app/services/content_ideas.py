@@ -457,7 +457,14 @@ def convert_content_idea_to_project(
     idea_id: int,
     data: ContentIdeaConversionCreate,
 ) -> tuple[ProjectRead, ContentIdeaRead]:
-    idea = get_content_idea(session, user_id, idea_id)
+    idea = session.exec(
+        select(ContentIdea)
+        .where(
+            ContentIdea.id == idea_id,
+            ContentIdea.user_id == user_id,
+        )
+        .with_for_update()
+    ).one_or_none()
     if idea is None:
         raise ContentIdeaNotFoundError
     if (
