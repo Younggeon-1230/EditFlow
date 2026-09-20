@@ -18,6 +18,7 @@ COPY backend/requirements.txt ./backend/requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
 COPY backend ./backend
+COPY shared ./shared
 COPY --from=frontend-build /app/dist ./dist
 
 WORKDIR /app/backend
