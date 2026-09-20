@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { generatePath, Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import BrollPanel from '../components/projectDetail/BrollPanel'
 import ChecklistMemoPanel from '../components/projectDetail/ChecklistMemoPanel'
 import ProjectInfo from '../components/projectDetail/ProjectInfo'
@@ -16,6 +16,7 @@ import { ROUTES } from '../constants/app'
 import projectDetailSamples from '../data/projectDetailSamples'
 import useChecklist from '../hooks/useChecklist'
 import useLegacyProjects from '../hooks/useLegacyProjects.js'
+import useProjectMutations from '../hooks/useProjectMutations.js'
 import useServerProject from '../hooks/useServerProject.js'
 import useProjectMemos from '../hooks/useProjectMemos'
 import useProjectSourceContentIdea from '../hooks/useProjectSourceContentIdea.js'
@@ -23,6 +24,7 @@ import useSavedBrolls from '../hooks/useSavedBrolls'
 import useSavedReferences from '../hooks/useSavedReferences'
 import { deleteProject as deleteProjectRequest, updateProject as updateProjectRequest } from '../services/projectsApi.js'
 import { parseServerProjectId, removeStoredProject, resolveLegacyProjectRoute, updateStoredProject } from '../utils/projectRead.js'
+import { createProjectTarget, encodeProjectSelection } from '../utils/projectTarget.js'
 
 const panelComponents = {
   references: ReferencePanel,
@@ -33,9 +35,11 @@ const panelComponents = {
 function ProjectDetailPage({ projectKind = 'server' }) {
   const { projectId, localProjectId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const serverProjectId = projectKind === 'server' ? parseServerProjectId(projectId) : null
   const server = useServerProject(serverProjectId)
   const legacy = useLegacyProjects()
+  const migration = useProjectMutations({ onLocalChanged: legacy.reload })
   const [activeTab, setActiveTab] = useState('references')
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isStatusOpen, setIsStatusOpen] = useState(false)
@@ -46,18 +50,17 @@ function ProjectDetailPage({ projectKind = 'server' }) {
   const project = projectKind === 'server'
     ? server.project
     : legacy.storedProjects.find((item) => item.id === localProjectId) ?? null
-  const childProjectId = projectKind === 'server' ? String(serverProjectId ?? '') : localProjectId
-  const backendProjectId = projectKind === 'server' ? serverProjectId : null
-  const checklist = useChecklist(
-    childProjectId,
-    backendProjectId,
+  const projectTarget = createProjectTarget(
+    projectKind,
+    projectKind === 'server' ? serverProjectId : localProjectId,
   )
-  const projectMemos = useProjectMemos(
-    childProjectId,
-    backendProjectId,
-  )
-  const savedReferences = useSavedReferences(backendProjectId)
-  const savedBrolls = useSavedBrolls(backendProjectId)
+  const backendProjectId = projectTarget?.kind === 'server'
+    ? projectTarget.id
+    : null
+  const checklist = useChecklist(projectTarget)
+  const projectMemos = useProjectMemos(projectTarget)
+  const savedReferences = useSavedReferences(projectTarget, projectKind === 'server')
+  const savedBrolls = useSavedBrolls(projectTarget, projectKind === 'server')
   const sourceIdea = useProjectSourceContentIdea(backendProjectId)
 
   useEffect(() => {
@@ -98,6 +101,10 @@ function ProjectDetailPage({ projectKind = 'server' }) {
 
   const ActivePanel = panelComponents[activeTab]
   const usesBackend = projectKind === 'server'
+  const migratedServerProjectId = !usesBackend
+    ? parseServerProjectId(project.migratedToProjectId)
+    : null
+  const isMigratedLocalSource = Boolean(migratedServerProjectId)
   const currentBackendStatus =
     (usesBackend ? project.status : project.backendStatus) ??
     (project.status === '완료'
@@ -107,7 +114,7 @@ function ProjectDetailPage({ projectKind = 'server' }) {
         : project.status === '기획 중'
           ? 'planning'
           : 'in_progress')
-  const projectQuery = `?project=${encodeURIComponent(usesBackend ? project.id : `local:${project.id}`)}`
+  const projectQuery = `?project=${encodeURIComponent(encodeProjectSelection(projectTarget))}`
   const panelProps = {
     references: usesBackend
       ? {
@@ -118,6 +125,7 @@ function ProjectDetailPage({ projectKind = 'server' }) {
           onRemove: savedReferences.remove,
           isUpdatingItem: savedReferences.isUpdatingItem,
           isDeletingItem: savedReferences.isDeletingItem,
+          onRetry: savedReferences.reload,
         }
       : { items: projectDetailSamples.references },
     thumbnails: { items: projectDetailSamples.thumbnails },
@@ -130,6 +138,7 @@ function ProjectDetailPage({ projectKind = 'server' }) {
           onRemove: savedBrolls.remove,
           isUpdatingItem: savedBrolls.isUpdatingItem,
           isDeletingItem: savedBrolls.isDeletingItem,
+          onRetry: savedBrolls.reload,
         }
       : { items: projectDetailSamples.brolls },
   }
@@ -141,22 +150,21 @@ function ProjectDetailPage({ projectKind = 'server' }) {
     pendingActionRef.current = 'edit'
     setPendingAction('edit')
     setActionError(null)
-    let updated = null
     try {
-      updated = usesBackend
+      const updated = usesBackend
         ? await updateProjectRequest(project.id, projectValues)
         : updateStoredProject(localStorage, legacy.storageKey, project.id, projectValues)
-      if (usesBackend) await server.reload()
+      if (!updated) {
+        throw new Error('프로젝트를 수정하지 못했습니다.')
+      }
+      if (usesBackend) server.applyProject(updated)
       else legacy.reload()
+      setIsEditOpen(false)
     } catch (error) {
       setActionError(error.message || '프로젝트를 수정하지 못했습니다.')
-    }
-    pendingActionRef.current = null
-    setPendingAction(null)
-    if (updated) {
-      setIsEditOpen(false)
-    } else {
-      setActionError('프로젝트를 수정하지 못했습니다.')
+    } finally {
+      pendingActionRef.current = null
+      setPendingAction(null)
     }
   }
 
@@ -181,22 +189,21 @@ function ProjectDetailPage({ projectKind = 'server' }) {
     setPendingAction('status')
     setActionError(null)
     const statusValue = usesBackend ? selectedStatus : statusLabel
-    let updated = null
     try {
-      updated = usesBackend
+      const updated = usesBackend
         ? await updateProjectRequest(project.id, { status: statusValue })
         : updateStoredProject(localStorage, legacy.storageKey, project.id, { status: statusValue })
-      if (usesBackend) await server.reload()
+      if (!updated) {
+        throw new Error('프로젝트 상태를 변경하지 못했습니다.')
+      }
+      if (usesBackend) server.applyProject(updated)
       else legacy.reload()
+      setIsStatusOpen(false)
     } catch (error) {
       setActionError(error.message || '프로젝트 상태를 변경하지 못했습니다.')
-    }
-    pendingActionRef.current = null
-    setPendingAction(null)
-    if (updated) {
-      setIsStatusOpen(false)
-    } else {
-      setActionError('프로젝트 상태를 변경하지 못했습니다.')
+    } finally {
+      pendingActionRef.current = null
+      setPendingAction(null)
     }
   }
 
@@ -234,22 +241,81 @@ function ProjectDetailPage({ projectKind = 'server' }) {
     setActionError('프로젝트를 삭제하지 못했습니다.')
   }
 
+  async function handleLocalImport() {
+    if (usesBackend || migration.isMutating) return
+    const confirmed = window.confirm(
+      '프로젝트와 체크리스트, 메모를 서버로 가져오시겠습니까?',
+    )
+    if (!confirmed) return
+    const result = await migration.migrateProject(project)
+    if (!result) return
+    const excludedCount =
+      result.excludedMedia.references + result.excludedMedia.brolls
+    const migrationNotice = !result.markerSaved
+      ? '서버 저장은 완료됐지만 로컬 완료 표시는 기록하지 못했습니다. 같은 가져오기를 다시 실행해도 중복 생성되지 않습니다.'
+      : excludedCount > 0
+        ? '기존 Reference/B-roll은 프로젝트 연결 정보가 없어 자동으로 가져오지 않았습니다.'
+        : null
+    navigate(
+      generatePath(ROUTES.projectDetail, {
+        projectId: result.project.id,
+      }),
+      { replace: true, state: { migrationNotice } },
+    )
+  }
+
   return (
     <main className="project-detail-page">
       <Link className="detail-back-link" to={ROUTES.projects}>
         <span aria-hidden="true">←</span> 프로젝트 목록
       </Link>
 
-      {!usesBackend && <div className="reference-state" role="status"><strong>로컬 프로젝트</strong><p>이 프로젝트는 현재 사용자 브라우저 저장소에만 있습니다.</p></div>}
+      {!usesBackend && (
+        <div className="reference-state legacy-import-state" role="status">
+          <strong>{isMigratedLocalSource ? '가져오기를 완료한 로컬 원본' : '로컬 프로젝트'}</strong>
+          <p>
+            {isMigratedLocalSource
+              ? '서버 Project와의 자동 동기화 없이 읽기 전용 원본으로 보존됩니다.'
+              : 'Project, Checklist, Memo를 한 번의 요청으로 서버에 가져옵니다.'}
+          </p>
+          <p>기존 Reference/B-roll은 프로젝트 연결 정보가 없어 자동으로 가져오지 않습니다.</p>
+          <div className="legacy-import-actions">
+            {migratedServerProjectId && (
+              <Link
+                className="secondary-button link-button"
+                to={generatePath(ROUTES.projectDetail, {
+                  projectId: migratedServerProjectId,
+                })}
+              >
+                서버 Project 열기
+              </Link>
+            )}
+            <button
+              className="primary-button"
+              disabled={migration.isMutating}
+              onClick={handleLocalImport}
+              type="button"
+            >
+              {migration.isMigrating ? '가져오는 중…' : '서버로 가져오기'}
+            </button>
+          </div>
+        </div>
+      )}
 
-      {actionError && (
+      {usesBackend && location.state?.migrationNotice && (
+        <div className="reference-state" role="status">
+          <p>{location.state.migrationNotice}</p>
+        </div>
+      )}
+
+      {(actionError || migration.error) && (
         <div className="reference-state error-state" role="alert">
-          <p>{actionError}</p>
+          <p>{actionError || migration.error}</p>
         </div>
       )}
 
       <ProjectInfo
-        disabled={Boolean(pendingAction)}
+        disabled={Boolean(pendingAction) || migration.isMutating}
         onChangeStatus={openStatusDialog}
         onDelete={handleDeleteProject}
         onEdit={() => {
@@ -257,6 +323,7 @@ function ProjectDetailPage({ projectKind = 'server' }) {
           setIsEditOpen(true)
         }}
         project={project}
+        showActions={!isMigratedLocalSource}
       />
       <ProjectSourceIdea projectKind={projectKind} relation={sourceIdea} />
       <ProjectTabs activeTab={activeTab} onTabChange={setActiveTab} />
@@ -276,6 +343,8 @@ function ProjectDetailPage({ projectKind = 'server' }) {
             isLoading={checklist.isLoading}
             mode="checklist"
             onToggle={checklist.toggleItem}
+            onRetry={checklist.refetch}
+            readOnly={isMigratedLocalSource}
           />
         )}
         {activeTab === 'memos' && (
@@ -290,9 +359,11 @@ function ProjectDetailPage({ projectKind = 'server' }) {
             onAdd={projectMemos.addMemo}
             onDelete={projectMemos.deleteMemo}
             onUpdate={projectMemos.updateMemo}
+            onRetry={projectMemos.refetch}
+            readOnly={isMigratedLocalSource}
           />
         )}
-        {activeTab === 'references' && (
+        {activeTab === 'references' && !isMigratedLocalSource && (
           <Link
             className="secondary-button detail-tab-cta"
             to={`${ROUTES.reference}${projectQuery}`}
@@ -300,7 +371,7 @@ function ProjectDetailPage({ projectKind = 'server' }) {
             유튜브 레퍼런스 검색
           </Link>
         )}
-        {activeTab === 'brolls' && (
+        {activeTab === 'brolls' && !isMigratedLocalSource && (
           <Link
             className="secondary-button detail-tab-cta"
             to={`${ROUTES.broll}${projectQuery}`}
@@ -308,7 +379,7 @@ function ProjectDetailPage({ projectKind = 'server' }) {
             B-roll 검색
           </Link>
         )}
-        {activeTab === 'checklist' && (
+        {activeTab === 'checklist' && !isMigratedLocalSource && (
           <Link
             className="secondary-button detail-tab-cta"
             to={`${ROUTES.checklist}${projectQuery}`}

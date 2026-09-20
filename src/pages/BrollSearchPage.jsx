@@ -18,7 +18,7 @@ function BrollSearchPage() {
     isLoading: isLoadingIdeas, error: ideaSelectionError,
   } = useMediaDestination()
   const savedBrolls = useSavedBrolls(
-    selectedProject?.backendProjectId ?? null,
+    selectedProject?.projectTarget ?? null,
     destinationType === 'project',
   )
   const savedIdeaBrolls = useContentIdeaBrolls(
@@ -126,6 +126,7 @@ function BrollSearchPage() {
         {destinationType === 'project' && savedBrolls.error && (
           <div className="reference-state error-state" role="alert">
             <p>{savedBrolls.error}</p>
+            <button className="secondary-button" onClick={savedBrolls.reload} type="button">다시 시도</button>
           </div>
         )}
         {destinationType === 'idea' && savedIdeaBrolls.error && (

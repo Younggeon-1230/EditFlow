@@ -26,7 +26,7 @@ function normalizeContent(content) {
 function mapProjectMemo(memo) {
   return {
     id: memo.id,
-    backendProjectId: memo.project_id,
+    projectId: memo.project_id,
     content: memo.content,
     position: memo.position,
     createdAt: memo.created_at,

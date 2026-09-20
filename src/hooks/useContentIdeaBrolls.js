@@ -8,7 +8,7 @@ import {
 
 function useContentIdeaBrolls(ideaId, enabled = true) {
   return useSavedMedia({
-    backendProjectId: ideaId,
+    resourceId: ideaId,
     enabled,
     listItems: getContentIdeaBrolls,
     createItem: createContentIdeaBroll,

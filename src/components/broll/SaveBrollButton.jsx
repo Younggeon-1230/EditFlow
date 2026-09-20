@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react'
 import useUserStorageKey from '../../hooks/useUserStorageKey.js'
 
-function isBackendProjectId(value) {
-  return Number.isInteger(value) && value > 0
-}
-
 function isAssetSaved(storageKey, assetId) {
   if (!storageKey) return false
   try {
@@ -29,14 +25,17 @@ function SaveBrollButton({
 }) {
   const storageKey = useUserStorageKey('savedBrolls')
   const externalId = asset.externalId ?? asset.id
-  const usesBackend = isBackendProjectId(project?.backendProjectId)
+  const usesBackend = project?.projectKind === 'server'
+  const usesLocalStorage = project?.projectKind === 'local'
   const [isSavedLocally, setIsSavedLocally] = useState(() =>
-    isAssetSaved(storageKey, asset.id),
+    usesLocalStorage ? isAssetSaved(storageKey, asset.id) : false,
   )
 
   useEffect(() => {
-    setIsSavedLocally(isAssetSaved(storageKey, asset.id))
-  }, [asset.id, project?.id, storageKey])
+    setIsSavedLocally(
+      usesLocalStorage ? isAssetSaved(storageKey, asset.id) : false,
+    )
+  }, [asset.id, storageKey, usesLocalStorage])
 
   async function handleSave() {
     if (destinationType === 'idea') {
@@ -52,6 +51,8 @@ function SaveBrollButton({
       await savedBrolls.save(asset)
       return
     }
+
+    if (!usesLocalStorage) return
 
     try {
       const storedValue = JSON.parse(

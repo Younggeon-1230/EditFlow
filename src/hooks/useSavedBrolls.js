@@ -6,9 +6,9 @@ import {
   updateSavedBrollNote,
 } from '../services/savedBrollsApi'
 
-function useSavedBrolls(backendProjectId, enabled = true) {
+function useSavedBrolls(projectTarget, enabled = true) {
   return useSavedMedia({
-    backendProjectId,
+    resourceId: projectTarget?.kind === 'server' ? projectTarget.id : null,
     listItems: getSavedBrolls,
     createItem: createSavedBroll,
     updateNote: updateSavedBrollNote,

@@ -5,6 +5,8 @@ function ChecklistMemoPanel({
   isLoading = false,
   error = null,
   onToggle,
+  onRetry,
+  readOnly = false,
   isItemPending = () => false,
 }) {
   if (mode === 'checklist') {
@@ -24,6 +26,7 @@ function ChecklistMemoPanel({
         {error && (
           <div className="reference-state error-state" role="alert">
             <p>{error}</p>
+            {onRetry && <button className="secondary-button" onClick={onRetry} type="button">다시 시도</button>}
           </div>
         )}
         {isLoading && checklist.length === 0 ? (
@@ -42,7 +45,7 @@ function ChecklistMemoPanel({
                     <input
                       aria-label={`${item.text} 완료 상태`}
                       checked={item.done}
-                      disabled={isLoading || isPending}
+                      disabled={readOnly || isLoading || isPending}
                       onChange={() => onToggle?.(item.id)}
                       type="checkbox"
                     />

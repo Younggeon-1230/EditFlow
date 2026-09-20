@@ -83,6 +83,7 @@ try {
   const cdp = new CdpClient(page.webSocketDebuggerUrl)
   await cdp.open()
   await cdp.send('Page.enable')
+  await cdp.send('Network.enable')
   await cdp.send('Runtime.enable')
   await cdp.send('Page.navigate', { url: frontendUrl })
   await delay(1000)
@@ -130,6 +131,21 @@ try {
       const project = await post('/api/projects', {
         title: 'PostgreSQL browser project', status: 'planning',
       });
+      const missingCsrf = await fetch(apiUrl + '/api/projects/' + project.data.id, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Must not update without CSRF' }),
+      });
+      const invalidCsrf = await fetch(apiUrl + '/api/projects/' + project.data.id, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': 'invalid-token',
+        },
+        body: JSON.stringify({ title: 'Must not update with invalid CSRF' }),
+      });
       const updated = await patch('/api/projects/' + project.data.id, {
         title: 'PostgreSQL browser project updated',
       });
@@ -168,6 +184,9 @@ try {
         signupA: signupA.status,
         meBeforeReload: meBeforeReload.status,
         projectCreate: project.status,
+        projectId: project.data.id,
+        missingCsrf: missingCsrf.status,
+        invalidCsrf: invalidCsrf.status,
         projectUpdate: updated.status,
         checklistCreate: checklist.status,
         memoCreate: memo.status,
@@ -192,6 +211,46 @@ try {
     throw new Error(first.exceptionDetails.exception?.description || 'Browser QA failed')
   }
 
+  const cookies = (await cdp.send('Network.getAllCookies')).cookies
+  const sessionCookie = cookies.find((cookie) => cookie.name === 'editflow_session')
+  const csrfCookie = cookies.find((cookie) => cookie.name === 'editflow_csrf')
+  if (!sessionCookie || !csrfCookie) {
+    throw new Error('Expected authentication cookies were not present')
+  }
+  if (new URL(frontendUrl).protocol === 'https:') {
+    if (!sessionCookie.secure || !sessionCookie.httpOnly || sessionCookie.sameSite !== 'Lax') {
+      throw new Error('Session cookie production attributes are invalid')
+    }
+    if (!csrfCookie.secure || csrfCookie.httpOnly || csrfCookie.sameSite !== 'Lax') {
+      throw new Error('CSRF cookie production attributes are invalid')
+    }
+    if (sessionCookie.domain.startsWith('.') || csrfCookie.domain.startsWith('.')) {
+      throw new Error('Authentication cookies must be host-only')
+    }
+  }
+
+  const cookieHeader = cookies
+    .filter((cookie) => ['editflow_session', 'editflow_csrf'].includes(cookie.name))
+    .map((cookie) => `${cookie.name}=${cookie.value}`)
+    .join('; ')
+  const invalidOrigin = await fetch(
+    `${apiUrl}/api/projects/${first.result.value.projectId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        Cookie: cookieHeader,
+        Origin: 'https://invalid.example',
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfCookie.value,
+      },
+      body: JSON.stringify({ title: 'Must not update from invalid origin' }),
+    },
+  )
+
+  await cdp.send('Page.navigate', {
+    url: `${frontendUrl}/projects/${first.result.value.projectId}`,
+  })
+  await delay(1000)
   await cdp.send('Page.reload', { ignoreCache: true })
   await delay(1000)
   const restored = await cdp.send('Runtime.evaluate', {
@@ -204,11 +263,24 @@ try {
     awaitPromise: true,
     returnByValue: true,
   })
-  const result = { ...first.result.value, reloadSession: restored.result.value }
+  const result = {
+    ...first.result.value,
+    invalidOrigin: invalidOrigin.status,
+    reloadSession: restored.result.value,
+    sessionCookieSecure: sessionCookie.secure,
+    sessionCookieHttpOnly: sessionCookie.httpOnly,
+    sessionCookieSameSite: sessionCookie.sameSite,
+    csrfCookieSecure: csrfCookie.secure,
+    csrfCookieHttpOnly: csrfCookie.httpOnly,
+    csrfCookieSameSite: csrfCookie.sameSite,
+  }
+  delete result.projectId
   const expected = {
     signupA: 201,
     meBeforeReload: 200,
     projectCreate: 201,
+    missingCsrf: 403,
+    invalidCsrf: 403,
     projectUpdate: 200,
     checklistCreate: 201,
     memoCreate: 201,
@@ -220,6 +292,7 @@ try {
     crossAccountIsolation: 404,
     loginA: 200,
     projectList: 200,
+    invalidOrigin: 403,
     reloadSession: 200,
   }
   for (const [key, value] of Object.entries(expected)) {

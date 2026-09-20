@@ -17,7 +17,7 @@ function ReferenceSearchPage() {
     isLoading: isLoadingIdeas, error: ideaSelectionError,
   } = useMediaDestination()
   const savedReferences = useSavedReferences(
-    selectedProject?.backendProjectId ?? null,
+    selectedProject?.projectTarget ?? null,
     destinationType === 'project',
   )
   const savedIdeaReferences = useContentIdeaReferences(
@@ -113,6 +113,7 @@ function ReferenceSearchPage() {
         {destinationType === 'project' && savedReferences.error && (
           <div className="reference-state error-state" role="alert">
             <p>{savedReferences.error}</p>
+            <button className="secondary-button" onClick={savedReferences.reload} type="button">다시 시도</button>
           </div>
         )}
         {destinationType === 'idea' && savedIdeaReferences.error && (

@@ -62,6 +62,8 @@ function ProjectMemoPanel({
   onAdd,
   onUpdate,
   onDelete,
+  onRetry,
+  readOnly = false,
 }) {
   const [isAdding, setIsAdding] = useState(false)
   const [newContent, setNewContent] = useState('')
@@ -102,19 +104,20 @@ function ProjectMemoPanel({
           <p className="resource-type">PROJECT MEMO</p>
           <h2>프로젝트 메모</h2>
         </div>
-        <button
+        {!readOnly && <button
           className="primary-button"
           disabled={isCreating || isAdding}
           onClick={() => setIsAdding(true)}
           type="button"
         >
           메모 추가
-        </button>
+        </button>}
       </div>
 
       {error && (
         <div className="reference-state error-state" role="alert">
           <p>{error}</p>
+          {onRetry && <button className="secondary-button" onClick={onRetry} type="button">다시 시도</button>}
         </div>
       )}
 
@@ -161,7 +164,7 @@ function ProjectMemoPanel({
               ) : (
                 <div className="project-memo-content">
                   <p>{memo.content}</p>
-                  <div className="project-memo-actions">
+                  {!readOnly && <div className="project-memo-actions">
                     <button
                       className="secondary-button"
                       disabled={isDeleting(memo.id)}
@@ -178,7 +181,7 @@ function ProjectMemoPanel({
                     >
                       {isDeleting(memo.id) ? '삭제 중' : '삭제'}
                     </button>
-                  </div>
+                  </div>}
                 </div>
               )}
             </li>

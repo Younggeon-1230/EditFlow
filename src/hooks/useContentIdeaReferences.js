@@ -8,7 +8,7 @@ import {
 
 function useContentIdeaReferences(ideaId, enabled = true) {
   return useSavedMedia({
-    backendProjectId: ideaId,
+    resourceId: ideaId,
     enabled,
     listItems: getContentIdeaReferences,
     createItem: createContentIdeaReference,

@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react'
 import useUserStorageKey from '../../hooks/useUserStorageKey.js'
 
-function isBackendProjectId(value) {
-  return Number.isInteger(value) && value > 0
-}
-
 function isVideoSaved(storageKey, videoId) {
   if (!storageKey) return false
   try {
@@ -29,14 +25,17 @@ function SaveToProjectButton({
 }) {
   const storageKey = useUserStorageKey('savedReferences')
   const externalId = video.externalId ?? video.id
-  const usesBackend = isBackendProjectId(project?.backendProjectId)
+  const usesBackend = project?.projectKind === 'server'
+  const usesLocalStorage = project?.projectKind === 'local'
   const [isSavedLocally, setIsSavedLocally] = useState(() =>
-    isVideoSaved(storageKey, video.id),
+    usesLocalStorage ? isVideoSaved(storageKey, video.id) : false,
   )
 
   useEffect(() => {
-    setIsSavedLocally(isVideoSaved(storageKey, video.id))
-  }, [project?.id, storageKey, video.id])
+    setIsSavedLocally(
+      usesLocalStorage ? isVideoSaved(storageKey, video.id) : false,
+    )
+  }, [storageKey, usesLocalStorage, video.id])
 
   async function handleSave() {
     if (destinationType === 'idea') {
@@ -52,6 +51,8 @@ function SaveToProjectButton({
       await savedReferences.save(video)
       return
     }
+
+    if (!usesLocalStorage) return
 
     try {
       const storedValue = JSON.parse(

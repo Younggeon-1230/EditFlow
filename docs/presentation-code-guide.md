@@ -1,5 +1,7 @@
 # EditFlow 기말 발표 코드 가이드
 
+> **Historical document:** 이 문서는 1학기 React/localStorage MVP 발표 당시의 구조를 기록한 자료입니다. 현재 EditFlow architecture는 FastAPI backend, 인증과 ownership, AI Content Idea, server-first Project 구조로 확장되었습니다. 최신 상태는 [repository README](../README.md), [Phase 10 Stabilization Checkpoint](phase-10-stabilization-checkpoint.md), [Phase 11-1 Production Architecture](phase-11-1-production-deployment-architecture.md)를 참고하세요.
+
 ## 1. 프로젝트 전체 구조
 
 EditFlow는 화면, 상태 로직, API 통신을 역할별로 분리한 React 프로젝트입니다.

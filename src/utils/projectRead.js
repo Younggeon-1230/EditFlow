@@ -52,6 +52,16 @@ export function classifyLegacyProjects(
 ) {
   const serverIds = new Set(serverProjects.map((project) => project.id))
   return storedProjects.flatMap((project) => {
+    const migratedProjectId = parseServerProjectId(project?.migratedToProjectId)
+    if (migratedProjectId) {
+      if (!hasServerResult || serverIds.has(migratedProjectId)) return []
+      return [{
+        ...project,
+        projectKind: 'local',
+        legacyState: 'stale-migration',
+        isMigratedSource: true,
+      }]
+    }
     const backendProjectId = parseServerProjectId(project?.backendProjectId)
     if (!backendProjectId || project?.syncStatus === 'local_only') {
       return [{ ...project, projectKind: 'local', legacyState: 'local-only' }]
@@ -64,10 +74,7 @@ export function classifyLegacyProjects(
 export function resolveLegacyProjectRoute(localProjectId, storedProjects) {
   const project = storedProjects.find((item) => item?.id === localProjectId)
   if (!project) return null
-  const backendProjectId = parseServerProjectId(project.backendProjectId)
-  return backendProjectId
-    ? `/projects/${backendProjectId}`
-    : `/projects/local/${encodeURIComponent(localProjectId)}`
+  return `/projects/local/${encodeURIComponent(localProjectId)}`
 }
 
 export function createProjectDashboardStats(projects) {

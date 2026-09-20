@@ -3,7 +3,7 @@ import { ROUTES } from '../../constants/app'
 import { getDday } from '../../utils/projectDates'
 import { getProjectStatusLabel } from '../../services/projectsApi.js'
 
-function ProjectCard({ project, onEdit, onDelete, projectKind = 'server' }) {
+function ProjectCard({ project, onEdit, onDelete, projectKind = 'server', disabled = false, isDeleting = false }) {
   const dueDate = project.dueDate ?? project.deadline ?? ''
   const checklistCompleted =
     project.checklistCompleted ?? project.checklistDone ?? 0
@@ -63,7 +63,12 @@ function ProjectCard({ project, onEdit, onDelete, projectKind = 'server' }) {
 
       <div className="project-card-actions">
         <Link
+          aria-disabled={disabled}
           className="card-detail-button"
+          onClick={(event) => {
+            if (disabled) event.preventDefault()
+          }}
+          tabIndex={disabled ? -1 : undefined}
           to={generatePath(
             projectKind === 'local' ? ROUTES.localProjectDetail : ROUTES.projectDetail,
             projectKind === 'local'
@@ -73,15 +78,21 @@ function ProjectCard({ project, onEdit, onDelete, projectKind = 'server' }) {
         >
           상세보기
         </Link>
-        <button className="card-action-button" onClick={() => onEdit(project)}>
-          수정
-        </button>
-        <button
-          className="card-action-button delete"
-          onClick={() => onDelete(project)}
-        >
-          삭제
-        </button>
+        {!project.isMigratedSource && (
+          <>
+            <button className="card-action-button" disabled={disabled} onClick={() => onEdit(project)} type="button">
+              수정
+            </button>
+            <button
+              className="card-action-button delete"
+              disabled={disabled}
+              onClick={() => onDelete(project)}
+              type="button"
+            >
+              {isDeleting ? '삭제 중…' : '삭제'}
+            </button>
+          </>
+        )}
       </div>
     </article>
   )

@@ -10,6 +10,7 @@ function ReferencePanel({
   isUpdatingItem = () => false,
   isDeletingItem = () => false,
   removeConfirmMessage,
+  onRetry,
 }) {
   const canManage = Boolean(onChangeNote && onRemove)
 
@@ -22,6 +23,7 @@ function ReferencePanel({
       {error && (
         <div className="reference-state error-state" role="alert">
           {error}
+          {onRetry && <button className="secondary-button" onClick={onRetry} type="button">다시 시도</button>}
         </div>
       )}
       {items.length === 0 ? (

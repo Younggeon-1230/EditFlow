@@ -6,6 +6,7 @@ function ProjectInfo({
   onEdit,
   onChangeStatus,
   onDelete,
+  showActions = true,
 }) {
   const dueDate = project.dueDate ?? project.deadline ?? ''
   return (
@@ -21,7 +22,7 @@ function ProjectInfo({
         <p>{project.description || '등록된 프로젝트 설명이 없습니다.'}</p>
       </div>
 
-      <div className="project-info-actions" aria-label="프로젝트 관리">
+      {showActions && <div className="project-info-actions" aria-label="프로젝트 관리">
         <button
           className="card-action-button"
           disabled={disabled}
@@ -46,7 +47,7 @@ function ProjectInfo({
         >
           {disabled ? '처리 중' : '삭제'}
         </button>
-      </div>
+      </div>}
     </section>
   )
 }

@@ -137,36 +137,6 @@ export function mapProjectFromApi(project) {
   }
 }
 
-// Kept as a temporary import alias for Phase 10 transition consumers.
-export const mapBackendProject = mapProjectFromApi
-
-export function mergeBackendProject(localProject, backendProject) {
-  const backendProjectId = backendProject.id ?? backendProject.backendProjectId
-  return {
-    ...localProject,
-    backendProjectId,
-    title: backendProject.title,
-    description: backendProject.description,
-    clientName: backendProject.clientName,
-    deadline: backendProject.dueDate,
-    dueDate: backendProject.dueDate,
-    status:
-      localProject.status ??
-      FRONTEND_STATUS_BY_BACKEND[backendProject.status] ??
-      backendProject.status,
-    backendStatus: backendProject.status,
-    serverCreatedAt: backendProject.createdAt,
-    updatedAt: backendProject.updatedAt,
-    referenceCount: backendProject.referenceCount,
-    brollCount: backendProject.brollCount,
-    checklistCompleted: backendProject.checklistCompleted,
-    checklistDone: backendProject.checklistCompleted,
-    checklistTotal: backendProject.checklistTotal,
-    syncStatus: 'synced',
-    lastSyncError: null,
-  }
-}
-
 export async function getProjects(signal) {
   const projects = await requestJson('/api/projects', {
     signal,
@@ -194,6 +164,17 @@ export async function createProject(project, signal) {
     fallbackErrorMessage: '프로젝트를 서버에 저장하지 못했습니다.',
   })
   return mapProjectFromApi(createdProject)
+}
+
+export async function importLocalProject(payload, signal) {
+  const project = await requestJson('/api/projects/import-local', {
+    method: 'POST',
+    body: payload,
+    signal,
+    errorMessages: PROJECT_ERROR_MESSAGES,
+    fallbackErrorMessage: 'Failed to import the local project.',
+  })
+  return mapProjectFromApi(project)
 }
 
 export async function updateProject(projectId, changes, signal) {

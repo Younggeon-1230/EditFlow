@@ -20,15 +20,14 @@ function sortChecklistItems(items) {
   return [...items].sort(
     (left, right) =>
       left.position - right.position ||
-      left.backendChecklistItemId - right.backendChecklistItemId,
+      left.id - right.id,
   )
 }
 
 export function mapChecklistItem(item) {
   return {
-    id: `server-checklist-${item.id}`,
-    backendChecklistItemId: item.id,
-    backendProjectId: item.project_id,
+    id: item.id,
+    projectId: item.project_id,
     text: item.title,
     title: item.title,
     description: item.description,
@@ -37,7 +36,6 @@ export function mapChecklistItem(item) {
     position: item.position,
     createdAt: item.created_at,
     updatedAt: item.updated_at,
-    syncStatus: 'synced',
   }
 }
 
@@ -145,4 +143,3 @@ export async function deleteChecklistItem(itemId, signal) {
     fallbackErrorMessage: '체크리스트 처리 중 오류가 발생했습니다.',
   })
 }
-

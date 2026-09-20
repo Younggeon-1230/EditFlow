@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError } from '../services/apiClient.js'
 import {
   createProjectMemo,
   deleteProjectMemo,
@@ -41,10 +40,17 @@ function sortMemos(items) {
   })
 }
 
-function useProjectMemos(localProjectId, backendProjectId = null) {
+function useProjectMemos(projectTarget) {
   const memoStorageKey = useUserStorageKey('projectMemos')
+  const isServerMode = projectTarget?.kind === 'server'
+  const backendProjectId = isServerMode ? projectTarget.id : null
+  const localProjectId = projectTarget?.kind === 'local'
+    ? projectTarget.id
+    : null
   const [localMemos, setLocalMemos] = useState(() =>
-    loadStoredProjectMemos(memoStorageKey),
+    projectTarget?.kind === 'local'
+      ? loadStoredProjectMemos(memoStorageKey)
+      : {},
   )
   const [serverItems, setServerItems] = useState([])
   const [itemsProjectId, setItemsProjectId] = useState(null)
@@ -63,7 +69,6 @@ function useProjectMemos(localProjectId, backendProjectId = null) {
   const deletingIdsRef = useRef(new Set())
   const isMounted = useRef(true)
 
-  const isServerMode = isBackendProjectId(backendProjectId)
   currentProjectId.current = backendProjectId
   itemsProjectIdRef.current = itemsProjectId
   const localItems = Array.isArray(localMemos[localProjectId])
@@ -77,6 +82,14 @@ function useProjectMemos(localProjectId, backendProjectId = null) {
         : localItems
   const isLoading =
     isLoadingState || (isServerMode && itemsProjectId !== backendProjectId)
+
+  useEffect(() => {
+    if (projectTarget?.kind === 'local') {
+      setLocalMemos(loadStoredProjectMemos(memoStorageKey))
+    } else {
+      setLocalMemos({})
+    }
+  }, [localProjectId, memoStorageKey, projectTarget?.kind])
 
   const refetch = useCallback(async () => {
     if (!isBackendProjectId(backendProjectId)) {
@@ -170,6 +183,7 @@ function useProjectMemos(localProjectId, backendProjectId = null) {
   }, [])
 
   function updateLocalItems(updater) {
+    if (projectTarget?.kind !== 'local' || !localProjectId) return
     setLocalMemos((current) => {
       const currentItems = Array.isArray(current[localProjectId])
         ? current[localProjectId]
@@ -184,7 +198,7 @@ function useProjectMemos(localProjectId, backendProjectId = null) {
   }
 
   async function addMemo(content) {
-    if (creatingRef.current || !localProjectId) {
+    if (creatingRef.current || !projectTarget) {
       return null
     }
     let normalized
@@ -360,14 +374,6 @@ function useProjectMemos(localProjectId, backendProjectId = null) {
       }
       return true
     } catch (deleteError) {
-      if (deleteError instanceof ApiError && deleteError.status === 404) {
-        if (currentProjectId.current === targetProjectId) {
-          setServerItems((current) =>
-            current.filter((memo) => memo.id !== memoId),
-          )
-        }
-        return true
-      }
       if (
         deleteError.name !== 'AbortError' &&
         currentProjectId.current === targetProjectId

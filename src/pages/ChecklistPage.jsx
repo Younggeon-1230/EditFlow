@@ -18,18 +18,13 @@ function ChecklistPage() {
     isLoading,
     isSaving,
     isSyncedProject,
-    localItemCount,
     error,
-    migrationStatus,
     addItem,
     toggleItem,
     deleteItem,
     resetChecklist,
-    migrateChecklistToBackend,
-  } = useChecklist(
-    selectedProject?.id ? String(selectedProject.id) : '',
-    selectedProject?.backendProjectId ?? null,
-  )
+    refetch,
+  } = useChecklist(selectedProject?.projectTarget ?? null)
 
   async function handleResetChecklist() {
     const shouldReset = window.confirm(
@@ -39,17 +34,7 @@ function ChecklistPage() {
     )
 
     if (shouldReset) {
-      await resetChecklist(selectedProject?.id ? String(selectedProject.id) : '')
-    }
-  }
-
-  async function handleChecklistMigration() {
-    const shouldMigrate = window.confirm(
-      '로컬 체크리스트를 서버로 동기화할까요? 서버 목록이 비어 있을 때만 진행됩니다.',
-    )
-
-    if (shouldMigrate) {
-      await migrateChecklistToBackend()
+      await resetChecklist()
     }
   }
 
@@ -67,37 +52,12 @@ function ChecklistPage() {
         selectedProjectId={selectedProjectId}
       />
 
-      {isSyncedProject && localItemCount > 0 && (
-        <section className="checklist-sync-notice">
-          <div>
-            <strong>로컬 체크리스트 {localItemCount}개가 남아 있습니다.</strong>
-            <p>자동 전송되지 않습니다. 서버 목록이 비어 있을 때만 직접 동기화할 수 있습니다.</p>
-          </div>
-          <button
-            className="secondary-button"
-            disabled={isSaving || isLoading}
-            onClick={handleChecklistMigration}
-            type="button"
-          >
-            {isSaving ? '처리 중' : '체크리스트 서버 동기화'}
-          </button>
-        </section>
-      )}
-
       {error && (
         <div className="reference-state error-state" role="alert">
           <p>{error}</p>
+          {isSyncedProject && <button className="secondary-button" onClick={refetch} type="button">다시 시도</button>}
         </div>
       )}
-
-      {migrationStatus &&
-        !migrationStatus.blocked &&
-        migrationStatus.failed === 0 &&
-        migrationStatus.migrated > 0 && (
-          <div className="reference-state" role="status">
-            로컬 체크리스트 {migrationStatus.migrated}개를 서버에 동기화했습니다.
-          </div>
-        )}
 
       {selectedProjectId && isLoading ? (
         <div className="reference-state">

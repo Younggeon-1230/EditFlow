@@ -2,15 +2,26 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import useLegacyProjects from './useLegacyProjects.js'
 import useServerProjects from './useServerProjects.js'
+import {
+  createProjectTarget,
+  encodeProjectSelection,
+  normalizeProjectSelection,
+} from '../utils/projectTarget.js'
 
 function useProjectSelection() {
   const server = useServerProjects()
   const legacy = useLegacyProjects(server.projects, server.hasResult)
   const [searchParams, setSearchParams] = useSearchParams()
-  const queryProjectId = searchParams.get('project') ?? ''
+  const queryProjectId = normalizeProjectSelection(searchParams.get('project'))
   const projects = useMemo(() => [
-    ...server.projects.map((project) => ({ ...project, projectKind: 'server', backendProjectId: project.id, selectionId: String(project.id) })),
-    ...legacy.projects.map((project) => ({ ...project, projectKind: 'local', backendProjectId: null, selectionId: `local:${project.id}` })),
+    ...server.projects.map((project) => {
+      const projectTarget = createProjectTarget('server', project.id)
+      return { ...project, projectKind: 'server', projectTarget, selectionId: encodeProjectSelection(projectTarget) }
+    }),
+    ...legacy.projects.map((project) => {
+      const projectTarget = createProjectTarget('local', project.id)
+      return { ...project, projectKind: 'local', projectTarget, selectionId: encodeProjectSelection(projectTarget) }
+    }),
   ], [legacy.projects, server.projects])
   const [selectedProjectId, setSelectedProjectIdState] = useState(queryProjectId)
 

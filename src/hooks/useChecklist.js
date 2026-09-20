@@ -9,7 +9,6 @@ import {
   getChecklistItems,
   updateChecklistItem,
 } from '../services/checklistItemsApi.js'
-import { migrateProjectChecklistToBackend } from '../utils/checklistMigration.js'
 import useUserStorageKey from './useUserStorageKey.js'
 
 function isBackendProjectId(value) {
@@ -61,7 +60,7 @@ function sortServerItems(items) {
   return [...items].sort(
     (left, right) =>
       left.position - right.position ||
-      left.backendChecklistItemId - right.backendChecklistItemId,
+      left.id - right.id,
   )
 }
 
@@ -102,17 +101,24 @@ function getChangedFields(item, changes) {
   return changed
 }
 
-function useChecklist(projectId, backendProjectId = null) {
+function useChecklist(projectTarget) {
   const checklistStorageKey = useUserStorageKey('checklists')
-  const [checklists, setChecklists] = useState(() => loadChecklists(checklistStorageKey))
+  const isSyncedProject = projectTarget?.kind === 'server'
+  const backendProjectId = isSyncedProject ? projectTarget.id : null
+  const projectId = projectTarget?.kind === 'local'
+    ? projectTarget.id
+    : isSyncedProject
+      ? String(projectTarget.id)
+      : ''
+  const [checklists, setChecklists] = useState(() =>
+    projectTarget?.kind === 'local' ? loadChecklists(checklistStorageKey) : {},
+  )
   const [serverItems, setServerItems] = useState([])
   const [itemsBackendProjectId, setItemsBackendProjectId] = useState(null)
   const [isLoadingState, setIsLoadingState] = useState(false)
   const [pendingKeys, setPendingKeys] = useState(() => new Set())
   const [isResetting, setIsResetting] = useState(false)
-  const [isMigrating, setIsMigrating] = useState(false)
   const [error, setError] = useState(null)
-  const [migrationStatus, setMigrationStatus] = useState(null)
   const listController = useRef(null)
   const listSequence = useRef(0)
   const itemsBackendProjectIdRef = useRef(itemsBackendProjectId)
@@ -122,13 +128,16 @@ function useChecklist(projectId, backendProjectId = null) {
   const exclusiveController = useRef(null)
   const isMounted = useRef(true)
 
-  const isSyncedProject = isBackendProjectId(backendProjectId)
   currentBackendProjectId.current = backendProjectId
   itemsBackendProjectIdRef.current = itemsBackendProjectId
 
   const localItems = useMemo(
-    () => (Array.isArray(checklists[projectId]) ? checklists[projectId] : []),
-    [checklists, projectId],
+    () => (
+      projectTarget?.kind === 'local' && Array.isArray(checklists[projectId])
+        ? checklists[projectId]
+        : []
+    ),
+    [checklists, projectId, projectTarget?.kind],
   )
   const visibleServerItems =
     itemsBackendProjectId === backendProjectId ? serverItems : []
@@ -143,7 +152,15 @@ function useChecklist(projectId, backendProjectId = null) {
     isSyncedProject && itemsBackendProjectId !== backendProjectId
   const isLoading = isLoadingState || isWaitingForProject
   const isSaving =
-    pendingKeys.size > 0 || isResetting || isMigrating
+    pendingKeys.size > 0 || isResetting
+
+  useEffect(() => {
+    if (projectTarget?.kind === 'local') {
+      setChecklists(loadChecklists(checklistStorageKey))
+    } else {
+      setChecklists({})
+    }
+  }, [checklistStorageKey, projectId, projectTarget?.kind])
 
   const loadServerItems = useCallback(async () => {
     if (!isBackendProjectId(backendProjectId)) {
@@ -223,8 +240,6 @@ function useChecklist(projectId, backendProjectId = null) {
     exclusiveController.current = null
     setPendingKeys(new Set())
     setIsResetting(false)
-    setIsMigrating(false)
-    setMigrationStatus(null)
 
     return () => {
       mutationControllers.current.forEach((controller) => controller.abort())
@@ -241,7 +256,7 @@ function useChecklist(projectId, backendProjectId = null) {
   }, [])
 
   function updateLocalProjectItems(updateItems, targetProjectId = projectId) {
-    if (!targetProjectId) {
+    if (projectTarget?.kind !== 'local' || !targetProjectId) {
       return
     }
 
@@ -361,7 +376,7 @@ function useChecklist(projectId, backendProjectId = null) {
     }
 
     const targetBackendProjectId = backendProjectId
-    const key = `${targetBackendProjectId}:item:${target.backendChecklistItemId}`
+    const key = `${targetBackendProjectId}:item:${target.id}`
     const controller = beginMutation(key)
     if (!controller) {
       return null
@@ -369,7 +384,7 @@ function useChecklist(projectId, backendProjectId = null) {
 
     try {
       const updated = await updateChecklistItem(
-        target.backendChecklistItemId,
+        target.id,
         changedFields,
         controller.signal,
       )
@@ -413,7 +428,7 @@ function useChecklist(projectId, backendProjectId = null) {
     const item = items.find((candidate) => candidate.id === itemId)
     return item
       ? pendingKeys.has(
-          `${backendProjectId}:item:${item.backendChecklistItemId}`,
+          `${backendProjectId}:item:${item.id}`,
         )
       : false
   }
@@ -432,7 +447,7 @@ function useChecklist(projectId, backendProjectId = null) {
     }
 
     const targetBackendProjectId = backendProjectId
-    const key = `${targetBackendProjectId}:item:${target.backendChecklistItemId}`
+    const key = `${targetBackendProjectId}:item:${target.id}`
     const controller = beginMutation(key)
     if (!controller) {
       return false
@@ -440,7 +455,7 @@ function useChecklist(projectId, backendProjectId = null) {
 
     try {
       await deleteChecklistItem(
-        target.backendChecklistItemId,
+        target.id,
         controller.signal,
       )
       if (
@@ -453,17 +468,6 @@ function useChecklist(projectId, backendProjectId = null) {
       }
       return true
     } catch (deleteError) {
-      if (deleteError instanceof ApiError && deleteError.status === 404) {
-        if (
-          isMounted.current &&
-          currentBackendProjectId.current === targetBackendProjectId
-        ) {
-          setServerItems((current) =>
-            current.filter((item) => item.id !== itemId),
-          )
-        }
-        return true
-      }
       if (
         deleteError.name !== 'AbortError' &&
         isMounted.current &&
@@ -527,7 +531,7 @@ function useChecklist(projectId, backendProjectId = null) {
           for (const createdItem of createdItems) {
             try {
               await deleteChecklistItem(
-                createdItem.backendChecklistItemId,
+                createdItem.id,
                 controller.signal,
               )
             } catch {
@@ -551,7 +555,7 @@ function useChecklist(projectId, backendProjectId = null) {
       for (const oldItem of visibleServerItems) {
         try {
           await deleteChecklistItem(
-            oldItem.backendChecklistItemId,
+            oldItem.id,
             controller.signal,
           )
         } catch (deleteError) {
@@ -589,68 +593,6 @@ function useChecklist(projectId, backendProjectId = null) {
     }
   }
 
-  async function migrateChecklistToBackend() {
-    if (
-      !projectId ||
-      !isSyncedProject ||
-      exclusiveController.current ||
-      pendingKeysRef.current.size > 0
-    ) {
-      return null
-    }
-
-    const targetBackendProjectId = backendProjectId
-    const controller = new AbortController()
-    exclusiveController.current = controller
-    setIsMigrating(true)
-    setMigrationStatus(null)
-    setError(null)
-
-    try {
-      const result = await migrateProjectChecklistToBackend({
-        localProjectId: projectId,
-        backendProjectId: targetBackendProjectId,
-        localItems,
-        storageKey: checklistStorageKey,
-        signal: controller.signal,
-      })
-      if (
-        isMounted.current &&
-        currentBackendProjectId.current === targetBackendProjectId
-      ) {
-        if (result.migrated > 0) {
-          await loadServerItems()
-        }
-        setMigrationStatus(result)
-        if (result.message) {
-          setError(result.message)
-        }
-      }
-      return result
-    } catch (migrationError) {
-      if (
-        migrationError.name !== 'AbortError' &&
-        isMounted.current &&
-        currentBackendProjectId.current === targetBackendProjectId
-      ) {
-        setError(
-          migrationError.message || '체크리스트 처리 중 오류가 발생했습니다.',
-        )
-      }
-      return null
-    } finally {
-      if (exclusiveController.current === controller) {
-        exclusiveController.current = null
-      }
-      if (
-        isMounted.current &&
-        currentBackendProjectId.current === targetBackendProjectId
-      ) {
-        setIsMigrating(false)
-      }
-    }
-  }
-
   return {
     items,
     completedCount,
@@ -661,15 +603,12 @@ function useChecklist(projectId, backendProjectId = null) {
     error,
     storageMode: isSyncedProject ? 'server' : 'local',
     isSyncedProject,
-    localItemCount: localItems.length,
-    migrationStatus,
     addItem,
     updateItem,
     toggleItem,
     isItemPending,
     deleteItem,
     resetChecklist,
-    migrateChecklistToBackend,
     refetch: loadServerItems,
   }
 }

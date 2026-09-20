@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import httpx
 from fastapi import FastAPI
@@ -9,6 +10,7 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.database import get_session
 from app.core.http import request_context_middleware, unexpected_exception_handler
+from app.frontend import install_production_frontend
 from app.services.users import ensure_development_user
 
 
@@ -66,10 +68,15 @@ app.add_exception_handler(Exception, unexpected_exception_handler)
 app.include_router(api_router)
 
 
-@app.get("/", tags=["Root"])
-def root() -> dict[str, str]:
-    return {
-        "message": "EditFlow API",
-        "docs": "/docs",
-        "health": "/health/live",
-    }
+if settings.environment == "production":
+    frontend_dist_dir = Path(__file__).resolve().parents[2] / "dist"
+    install_production_frontend(app, frontend_dist_dir)
+else:
+
+    @app.get("/", tags=["Root"])
+    def root() -> dict[str, str]:
+        return {
+            "message": "EditFlow API",
+            "docs": "/docs",
+            "health": "/health/live",
+        }

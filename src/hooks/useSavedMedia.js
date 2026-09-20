@@ -4,12 +4,12 @@ import { ApiError } from '../services/apiClient'
 const UNSYNCED_PROJECT_MESSAGE =
   '이 프로젝트는 아직 서버와 동기화되지 않았습니다.'
 
-function isBackendProjectId(value) {
+function isResourceId(value) {
   return Number.isInteger(value) && value > 0
 }
 
 function useSavedMedia({
-  backendProjectId,
+  resourceId,
   listItems,
   createItem,
   updateNote,
@@ -18,7 +18,7 @@ function useSavedMedia({
   duplicateMessage = null,
 }) {
   const [items, setItems] = useState([])
-  const [itemsProjectId, setItemsProjectId] = useState(null)
+  const [itemsResourceId, setItemsResourceId] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [savingExternalIds, setSavingExternalIds] = useState(() => new Set())
   const [updatingIds, setUpdatingIds] = useState(() => new Set())
@@ -30,11 +30,11 @@ function useSavedMedia({
   const savingExternalIdsRef = useRef(new Set())
   const updatingIdsRef = useRef(new Set())
   const deletingIdsRef = useRef(new Set())
-  const currentProjectId = useRef(backendProjectId)
-  const itemsProjectIdRef = useRef(itemsProjectId)
+  const currentResourceId = useRef(resourceId)
+  const itemsResourceIdRef = useRef(itemsResourceId)
 
-  currentProjectId.current = backendProjectId
-  itemsProjectIdRef.current = itemsProjectId
+  currentResourceId.current = resourceId
+  itemsResourceIdRef.current = itemsResourceId
 
   const loadItems = useCallback(async () => {
     if (!enabled) {
@@ -43,12 +43,12 @@ function useSavedMedia({
       setIsLoading(false)
       return
     }
-    if (!isBackendProjectId(backendProjectId)) {
+    if (!isResourceId(resourceId)) {
       listController.current?.abort()
       listSequence.current += 1
       setItems([])
-      setItemsProjectId(null)
-      itemsProjectIdRef.current = null
+      setItemsResourceId(null)
+      itemsResourceIdRef.current = null
       setIsLoading(false)
       setError(null)
       return
@@ -59,16 +59,16 @@ function useSavedMedia({
     const sequence = listSequence.current + 1
     listSequence.current = sequence
     listController.current = controller
-    if (itemsProjectIdRef.current !== backendProjectId) {
+    if (itemsResourceIdRef.current !== resourceId) {
       setItems([])
     }
-    setItemsProjectId(backendProjectId)
-    itemsProjectIdRef.current = backendProjectId
+    setItemsResourceId(resourceId)
+    itemsResourceIdRef.current = resourceId
     setIsLoading(true)
     setError(null)
 
     try {
-      const nextItems = await listItems(backendProjectId, controller.signal)
+      const nextItems = await listItems(resourceId, controller.signal)
       if (listSequence.current === sequence) {
         setItems(nextItems)
       }
@@ -85,7 +85,7 @@ function useSavedMedia({
         listController.current = null
       }
     }
-  }, [backendProjectId, enabled, listItems])
+  }, [resourceId, enabled, listItems])
 
   useEffect(() => {
     loadItems()
@@ -101,25 +101,25 @@ function useSavedMedia({
       mutationControllers.current.forEach((controller) => controller.abort())
       mutationControllers.current.clear()
     },
-    [backendProjectId, enabled],
+    [resourceId, enabled],
   )
 
   const savedExternalIds = useMemo(
     () =>
       new Set(
-        (itemsProjectId === backendProjectId ? items : []).map(
+        (itemsResourceId === resourceId ? items : []).map(
           (item) => item.externalId,
         ),
       ),
-    [backendProjectId, items, itemsProjectId],
+    [items, itemsResourceId, resourceId],
   )
-  const visibleItems = itemsProjectId === backendProjectId ? items : []
-  const isWaitingForProject =
-    isBackendProjectId(backendProjectId) &&
-    itemsProjectId !== backendProjectId
+  const visibleItems = itemsResourceId === resourceId ? items : []
+  const isWaitingForResource =
+    isResourceId(resourceId) &&
+    itemsResourceId !== resourceId
 
   async function save(searchItem) {
-    if (!isBackendProjectId(backendProjectId)) {
+    if (!isResourceId(resourceId)) {
       setError(UNSYNCED_PROJECT_MESSAGE)
       return null
     }
@@ -134,7 +134,7 @@ function useSavedMedia({
     }
 
     const controller = new AbortController()
-    const targetProjectId = backendProjectId
+    const targetResourceId = resourceId
     mutationControllers.current.add(controller)
     savingExternalIdsRef.current.add(externalId)
     setSavingExternalIds((current) => new Set(current).add(externalId))
@@ -142,11 +142,11 @@ function useSavedMedia({
 
     try {
       const savedItem = await createItem(
-        targetProjectId,
+        targetResourceId,
         searchItem,
         controller.signal,
       )
-      if (currentProjectId.current === targetProjectId) {
+      if (currentResourceId.current === targetResourceId) {
         setItems((current) => [
           savedItem,
           ...current.filter((item) => item.id !== savedItem.id),
@@ -158,13 +158,13 @@ function useSavedMedia({
         return null
       }
       if (saveError instanceof ApiError && saveError.status === 409) {
-        if (currentProjectId.current === targetProjectId) {
+        if (currentResourceId.current === targetResourceId) {
           await loadItems()
           if (duplicateMessage) setError(duplicateMessage)
         }
         return null
       }
-      if (currentProjectId.current === targetProjectId) {
+      if (currentResourceId.current === targetResourceId) {
         setError(saveError.message)
       }
       return null
@@ -180,7 +180,7 @@ function useSavedMedia({
   }
 
   async function changeNote(itemId, note) {
-    if (!isBackendProjectId(backendProjectId)) {
+    if (!isResourceId(resourceId)) {
       return null
     }
 
@@ -189,7 +189,7 @@ function useSavedMedia({
     }
 
     const controller = new AbortController()
-    const targetProjectId = backendProjectId
+    const targetResourceId = resourceId
     mutationControllers.current.add(controller)
     updatingIdsRef.current.add(itemId)
     setUpdatingIds((current) => new Set(current).add(itemId))
@@ -197,7 +197,7 @@ function useSavedMedia({
 
     try {
       const updatedItem = await updateNote(itemId, note, controller.signal)
-      if (currentProjectId.current === targetProjectId) {
+      if (currentResourceId.current === targetResourceId) {
         setItems((current) =>
           current.map((item) => (item.id === itemId ? updatedItem : item)),
         )
@@ -206,7 +206,7 @@ function useSavedMedia({
     } catch (updateError) {
       if (
         updateError.name !== 'AbortError' &&
-        currentProjectId.current === targetProjectId
+        currentResourceId.current === targetResourceId
       ) {
         setError(updateError.message)
       }
@@ -223,7 +223,7 @@ function useSavedMedia({
   }
 
   async function remove(itemId) {
-    if (!isBackendProjectId(backendProjectId)) {
+    if (!isResourceId(resourceId)) {
       return false
     }
 
@@ -232,7 +232,7 @@ function useSavedMedia({
     }
 
     const controller = new AbortController()
-    const targetProjectId = backendProjectId
+    const targetResourceId = resourceId
     mutationControllers.current.add(controller)
     deletingIdsRef.current.add(itemId)
     setDeletingIds((current) => new Set(current).add(itemId))
@@ -240,20 +240,14 @@ function useSavedMedia({
 
     try {
       await deleteItem(itemId, controller.signal)
-      if (currentProjectId.current === targetProjectId) {
+      if (currentResourceId.current === targetResourceId) {
         setItems((current) => current.filter((item) => item.id !== itemId))
       }
       return true
     } catch (deleteError) {
-      if (deleteError instanceof ApiError && deleteError.status === 404) {
-        if (currentProjectId.current === targetProjectId) {
-          setItems((current) => current.filter((item) => item.id !== itemId))
-        }
-        return true
-      }
       if (
         deleteError.name !== 'AbortError' &&
-        currentProjectId.current === targetProjectId
+        currentResourceId.current === targetResourceId
       ) {
         setError(deleteError.message)
       }
@@ -271,7 +265,7 @@ function useSavedMedia({
 
   return {
     items: visibleItems,
-    isLoading: isLoading || isWaitingForProject,
+    isLoading: isLoading || isWaitingForResource,
     isSaving: savingExternalIds.size > 0,
     error,
     savedExternalIds,

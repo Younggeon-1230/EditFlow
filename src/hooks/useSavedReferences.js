@@ -6,9 +6,9 @@ import {
   updateSavedReferenceNote,
 } from '../services/savedReferencesApi'
 
-function useSavedReferences(backendProjectId, enabled = true) {
+function useSavedReferences(projectTarget, enabled = true) {
   return useSavedMedia({
-    backendProjectId,
+    resourceId: projectTarget?.kind === 'server' ? projectTarget.id : null,
     listItems: getSavedReferences,
     createItem: createSavedReference,
     updateNote: updateSavedReferenceNote,

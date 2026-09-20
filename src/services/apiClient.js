@@ -7,10 +7,16 @@ let csrfBootstrapPromise = null
 const unauthorizedListeners = new Set()
 
 const API_BASE_URL = (
-  import.meta.env?.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
+  import.meta.env?.VITE_API_BASE_URL
+  || (import.meta.env?.PROD ? '' : DEFAULT_API_BASE_URL)
 )
   .trim()
   .replace(/\/+$/, '')
+
+function buildApiUrl(path) {
+  const base = globalThis.location?.origin || DEFAULT_API_BASE_URL
+  return new URL(`${API_BASE_URL}${path}`, base)
+}
 
 const DEFAULT_ERROR_MESSAGES = {
   422: '검색 조건을 확인해 주세요.',
@@ -60,7 +66,7 @@ async function ensureCsrfToken(signal, { force = false } = {}) {
   }
 
   if (!csrfBootstrapPromise) {
-    csrfBootstrapPromise = fetch(`${API_BASE_URL}/api/auth/csrf`, {
+    csrfBootstrapPromise = fetch(buildApiUrl('/api/auth/csrf'), {
       credentials: 'include',
       method: 'GET',
     }).then((response) => {
@@ -107,7 +113,7 @@ export async function requestJson(
     skipAuthInvalidation = false,
   } = {},
 ) {
-  const url = new URL(`${API_BASE_URL}${path}`)
+  const url = buildApiUrl(path)
   const normalizedMethod = method.toUpperCase()
 
   Object.entries(params ?? {}).forEach(([key, value]) => {

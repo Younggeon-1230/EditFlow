@@ -56,7 +56,13 @@ function useServerProject(projectId) {
     }
   }, [reload])
 
-  return { project, isLoading, error, isNotFound, reload }
+  const applyProject = useCallback((nextProject) => {
+    setProject(nextProject)
+    setError(null)
+    setIsNotFound(false)
+  }, [])
+
+  return { project, isLoading, error, isNotFound, reload, applyProject }
 }
 
 export default useServerProject
