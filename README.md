@@ -6,10 +6,16 @@
 
 - **무엇:** 영상 제작의 아이디어, 레퍼런스, B-roll, 체크리스트와 메모를 Project 단위로 연결합니다.
 - **시작:** React와 `localStorage`로 편집 자료를 관리하는 1학기 MVP에서 출발했습니다.
-- **현재:** FastAPI backend, 인증·멀티유저, 콘텐츠 아이디어(Content Idea), 서버 우선 구조(server-first)까지 확장했습니다.
+- **현재:** FastAPI backend, 인증·멀티유저, server-first workflow, PostgreSQL과 실제 cloud deployment까지 완료했습니다.
 - **핵심 과제:** browser-local 데이터를 Backend DB/API 기준 저장소로 전환하고, 소유권 검증(ownership)과 CSRF, 레거시(legacy) 데이터 migration을 설계했습니다.
 - **AI:** 직접 학습한 모델이 아니라 OpenAI Responses API를 활용한 LLM application engineering으로 콘텐츠 후보를 생성·검증합니다.
-- **상태:** Phase 10 stabilization, Phase 11-3 PostgreSQL live integration, Phase 11-4 production config/security를 완료했으며 실제 deployment를 앞두고 있습니다.
+- **상태:** Render + Neon 배포와 HTTPS/auth/CSRF/ownership browser QA, OpenAI production live smoke를 완료한 **EditFlow v1 COMPLETE** 상태입니다.
+
+## Live Demo
+
+**[https://editflow-1utp.onrender.com](https://editflow-1utp.onrender.com)**
+
+Render free tier 특성상 장시간 미사용 후 첫 요청에는 cold start가 발생할 수 있습니다. 이 배포는 전체 production lifecycle과 보안 동작을 검증하기 위한 portfolio deployment이며, 상시 공개 운영과 수익화는 v1 범위가 아닙니다.
 
 ## Overview
 
@@ -86,7 +92,7 @@ localStorage MVP
 | 영역 | 현재 구현 |
 | --- | --- |
 | Project | 사용자별 생성·조회·수정·삭제, 상태·마감일·진행 정보 |
-| 편집 관리 | Project별 체크리스트와 메모 |
+| 편집 관리 | Project별 체크리스트·메모, 빈 Project에서 선택적으로 생성하는 기본 체크리스트 |
 | 레퍼런스 | backend proxy를 통한 YouTube 검색 및 Project/Content Idea 저장 |
 | B-roll | backend proxy를 통한 Pexels 영상·이미지 검색 및 저장 |
 | Content Idea | 수동 생성, 필터·정렬, 상세 관리, 자료 연결 |
@@ -151,9 +157,10 @@ LLM candidate generation
 
 ```mermaid
 flowchart LR
-    B[Browser] --> F[React / Vite]
-    F -->|Fetch + credentials| A[FastAPI]
-    A --> D[(SQLite in development)]
+    B[Browser] -->|HTTPS / same-origin| R[Render Web Service]
+    R --> F[React / Vite static bundle]
+    R --> A[FastAPI API and health routes]
+    A --> D[(Neon PostgreSQL)]
     A --> Y[YouTube Data API]
     A --> P[Pexels API]
     A --> O[OpenAI Responses API]
@@ -163,9 +170,12 @@ flowchart LR
 - FastAPI는 인증, ownership, validation, transaction, 외부 provider와 secret을 담당합니다.
 - SQLModel이 domain model과 persistence를 연결하고 Alembic이 schema history의 기준입니다.
 - YouTube, Pexels, OpenAI key는 browser bundle이 아니라 backend 환경 변수에만 둡니다.
-- 현재 SQLite는 local development 기준이며, production 목표 DB는 PostgreSQL입니다.
+- SQLite는 빠른 local development에 사용하고, production은 Alembic migration을 적용한 Neon PostgreSQL을 사용합니다.
+- production에서는 FastAPI가 React build와 `/api`, health route, SPA fallback을 한 Render Web Service에서 제공합니다.
 
-Production topology와 PostgreSQL 전환 판단은 [Phase 11-1 Production Architecture](docs/phase-11-1-production-deployment-architecture.md), 구현된 운영 경계는 [Phase 11-4 Production Config And Security](docs/phase-11-4-production-config-security.md)에 정리되어 있습니다.
+별도 frontend/backend origin에서도 host-only cookie 자체는 가능하지만, cross-site fetch에서는 현재의 `SameSite=Lax` cookie 전송이 제한됩니다. 따라서 v1은 인증·CSRF 구조를 그대로 유지하고 CORS 복잡도를 줄이는 genuine same-origin 구성을 선택했습니다.
+
+Production topology와 PostgreSQL 전환 판단은 [Phase 11-1 Production Architecture](docs/phase-11-1-production-deployment-architecture.md), 운영 경계는 [Phase 11-4 Production Config And Security](docs/phase-11-4-production-config-security.md), 실제 배포 결과는 [Phase 11-5 Actual Deployment](docs/phase-11-5-actual-deployment.md)에 정리되어 있습니다.
 
 ## Authentication And Data Ownership
 
@@ -208,21 +218,21 @@ localStorage namespace는 사용자별 legacy data 충돌을 줄이기 위한 co
 | Frontend | React 18, Vite 6, React Router 7, Fetch API |
 | State / client logic | React Context와 `AuthProvider`, domain custom hooks, local component state |
 | Backend | FastAPI, SQLModel, SQLAlchemy, Pydantic |
-| Database | SQLite (fast/local development), PostgreSQL 17 integration, Alembic, Psycopg 3 |
+| Database | SQLite (local development), Neon PostgreSQL (production), Alembic, Psycopg 3 |
 | AI | OpenAI Responses API, Structured Outputs, provider abstraction |
 | External APIs | YouTube Data API, Pexels API |
 | Security | Argon2id, opaque DB session, HttpOnly cookie, CSRF, explicit CORS |
 | Validation | pytest, Node smoke scripts, Vite production build, Headless Edge QA |
-| Planned | Actual HTTPS deployment with managed PostgreSQL |
+| Deployment | Render Docker Web Service, same-origin static/API serving, Neon PostgreSQL |
 
 ## Validation And QA
 
-Phase 11-4까지 현재 repository 상태를 기준으로 다음 결과를 확인했습니다.
+Local regression과 실제 Render + Neon production 환경에서 다음 범위를 확인했습니다.
 
 | 검증 | 결과 |
 | --- | --- |
-| Backend SQLite suite | 373 passed, 12 PostgreSQL tests deselected |
-| PostgreSQL live suite | 12 passed against PostgreSQL 17.6 |
+| Backend non-PostgreSQL suite | 386 passed; PostgreSQL 전용 tests 별도 분리 |
+| PostgreSQL | Phase 11-3 live suite 통과, Neon fresh DB migration 완료 |
 | Python compile / dependency check | `compileall`, `pip check` passed |
 | Alembic | one current head, no pending model operation |
 | Migration rehearsal | blank SQLite와 development DB copy의 downgrade/re-upgrade passed |
@@ -230,13 +240,15 @@ Phase 11-4까지 현재 repository 상태를 기준으로 다음 결과를 확�
 | Frontend production build | passed |
 | Project API / child / migration smoke | passed |
 | Content Idea media smoke | passed |
-| Browser core workflow | PostgreSQL-backed Headless Edge QA passed |
-| Account isolation | cross-user generic `404` confirmed |
-| External live calls during Phase 11-4 | OpenAI 0, YouTube 0, Pexels 0 |
+| Production health | public HTTPS `/health/live`, `/health/ready` 200 |
+| Browser core workflow | signup/login/session restore, Project와 child CRUD, conversion, SPA refresh 통과 |
+| Cookie / CSRF | Secure·HttpOnly session cookie, readable CSRF cookie, SameSite=Lax와 CSRF flow 확인 |
+| Account isolation | production에서 cross-user generic `404` 확인 |
+| AI production smoke | OpenAI Responses API 추천 3건, 선택 저장, F5와 Neon persistence 확인 |
 
-Browser QA는 signup, reload 후 session 복원, Project 지속성, 실패한 mutation의 기존값 보존, child CRUD, Content Idea 변환, logout/relogin, A/B 계정 격리, localStorage 삭제 후 server data 유지, legacy import 재시도까지 포함했습니다. AI provider 경로는 live call 대신 mock/fixture 기반 backend test로 검증했습니다.
+Production browser QA는 signup, login, reload 후 session 복원, Project와 child CRUD, Content Idea 변환, logout/relogin, A/B 계정 격리, data persistence와 direct SPA route refresh를 포함했습니다. AI는 제한된 live-call smoke 후 다시 기본 비활성화 상태로 전환했습니다.
 
-자세한 실행 증거와 알려진 warning은 [stabilization 문서](docs/phase-10-stabilization-checkpoint.md)에 기록되어 있습니다.
+실제 배포·production QA 증거는 [Phase 11-5 문서](docs/phase-11-5-actual-deployment.md)에, 이전 로컬 안정화 증거와 알려진 warning은 [stabilization 문서](docs/phase-10-stabilization-checkpoint.md)에 기록되어 있습니다.
 
 ## Running Locally
 
@@ -363,13 +375,16 @@ EditFlow/
 - Phase 11-2: dialect-aware engine, UTC datetime, Psycopg와 PostgreSQL offline compatibility
 - Phase 11-3: Docker Compose PostgreSQL, live migration, integration/concurrency/browser QA
 - Phase 11-4: production fail-fast config, Secure cookie, trusted hosts, health probes, request ID와 DB pool policy
+- Phase 11-5: Render + Neon actual deployment, production browser/security/AI smoke, default checklist final polish
 
 ### Phase 11
 
 - **11-2:** SQLite → PostgreSQL code compatibility 완료
 - **11-3:** local/dev PostgreSQL과 migration-backed integration test 완료
 - **11-4:** production config, Secure cookie, readiness, logging, seed/startup policy 완료
-- **11-5:** frontend/backend/managed PostgreSQL deployment와 production smoke test
+- **11-5:** Render same-origin Web Service와 Neon PostgreSQL 배포, production smoke 완료
+
+**EditFlow v1: COMPLETE.** Full-stack workflow, 인증과 ownership, server-first 전환, AI recommendation, managed PostgreSQL, HTTPS cloud deployment와 production security QA까지 계획한 v1 범위를 완료했습니다. P0/P1 production blocker는 확인되지 않았습니다.
 
 ### v1 이후
 
@@ -377,8 +392,10 @@ EditFlow/
 - 사용자 행동 이벤트 수집과 데이터 품질 기준
 - seasonal, interest, recent-behavior score를 이용한 personalization ranking
 - 충분한 데이터가 확보된 뒤 ML/ranking model의 baseline 비교
+- multi-replica 전 shared rate-limit/save-token replay 저장소 또는 gateway
+- PostgreSQL integration의 CI 자동화
 
-현재 한계는 미완료 production deployment, process-local rate limiting/replay guard, 행동 데이터 기반 개인화 미구현입니다. 첫 production 배포는 단일 backend process/replica가 운영 계약이며, 수평 확장 전 shared rate limit/replay 저장소 또는 gateway 보완이 필요합니다.
+현재 non-blocking 한계는 free-tier cold start, 단일 backend process/replica, process-local rate limiting/replay guard, custom domain·Redis·행동 데이터 기반 개인화 미구현입니다. 이는 production lifecycle 검증이라는 v1 목표 밖의 장기 운영·확장 과제입니다.
 
 ## Architecture Records
 
@@ -390,4 +407,5 @@ EditFlow/
 - [Phase 11-2: SQLite To PostgreSQL Compatibility](docs/phase-11-2-postgresql-compatibility.md)
 - [Phase 11-3: PostgreSQL Local And Development Integration](docs/phase-11-3-postgresql-local-integration.md)
 - [Phase 11-4: Production Config And Security](docs/phase-11-4-production-config-security.md)
+- [Phase 11-5: Actual Deployment And v1 Completion](docs/phase-11-5-actual-deployment.md)
 - [1학기 Frontend MVP 발표 코드 가이드](docs/presentation-code-guide.md) - historical document

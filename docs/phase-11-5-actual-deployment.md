@@ -2,258 +2,318 @@
 
 ## Status
 
-The repository-side deployment implementation and local regression are ready.
-The account-side Neon and Render operations are not yet executed because this
-Codex session has no connected Render or Neon account. Consequently, no public
-URL, managed-database migration result, HTTPS browser result, provider smoke,
-or Render log result is claimed in this document. Complete the short handoff
-below, then run the production QA before marking EditFlow v1 complete.
+**Complete.** EditFlow v1 was deployed to Render with Neon PostgreSQL and was
+verified through the public HTTPS endpoint. Production health, authentication,
+cookie/CSRF behavior, ownership isolation, the core browser workflow, and one
+bounded OpenAI live smoke all passed. No P0/P1 production blocker remained.
 
-Do not paste database passwords, API keys, cookies, or tokens into chat, source
-control, this document, or the README.
+This is a portfolio deployment for validating the complete production
+lifecycle and security behavior. Continuous public operation, high
+availability, and monetization are outside the v1 scope.
 
-## Final Deployment Architecture
+## Goal
+
+Phase 11-5 closed the path from local development to an actual cloud release:
+
+- apply the complete Alembic chain to a fresh managed PostgreSQL database;
+- build and run the Docker image on a public HTTPS service;
+- serve the React application and FastAPI API from one origin;
+- verify authentication, CSRF, ownership, persistence, and SPA routing;
+- run a tightly bounded AI provider smoke without leaving live calls enabled;
+- record deployment failures and the fixes that made the release reproducible.
+
+No database credential, provider key, cookie, token, password, or full
+connection URL is recorded here.
+
+## Final Architecture
 
 ```text
 Browser
   |
-  | HTTPS (one origin)
+  | HTTPS / same-origin
   v
-Render Web Service (Docker, 1 instance, Uvicorn worker count 1)
-  |-- /api/*           FastAPI JSON API
-  |-- /health/live     process liveness
-  |-- /health/ready    FastAPI + PostgreSQL readiness
-  |-- /assets/*        Vite production assets
-  `-- all other GETs   built file or React index.html fallback
+Render Web Service (Docker, one instance/process)
+  |-- React/Vite static bundle
+  |-- FastAPI /api/*
+  |-- /health/live
+  |-- /health/ready
+  `-- SPA fallback
           |
-          `-- Neon PostgreSQL (direct TLS connection)
+          v
+     Neon PostgreSQL
 
-Optional request-time providers: OpenAI Responses API, YouTube API, Pexels API
+Request-time external providers:
+  OpenAI Responses API (live calls normally disabled)
+  YouTube Data API
+  Pexels API
 ```
 
-FastAPI-served React was selected over separate public frontend and backend
-origins. It keeps the current host-only session and CSRF cookies readable or
-sendable only where intended, keeps `SameSite=Lax`, requires no parent-domain
-cookie, and makes relative `/api` calls genuinely same-origin. A multi-stage
-Docker build is used because this single service reproducibly needs both Node
-and Python toolchains. No persistent Render filesystem is required.
+The Render filesystem is not authoritative. Application data is stored in
+Neon, while provider secrets exist only in the hosting environment.
 
-## Render Configuration
+## Providers
 
-`render.yaml` is the source of truth:
+### Render
 
-- service: one Docker Web Service on the free plan in Singapore;
-- build: Render BuildKit executes the repository-root `Dockerfile`;
-- frontend stage: Node 22 Alpine, `npm ci`, then `npm run build`;
-- runtime stage: Python 3.13 slim and pinned `backend/requirements.txt`;
-- start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1`;
-- instances: exactly one;
-- health check: `/health/live`;
-- deploy trigger: manual (`autoDeployTrigger: off`).
+- Docker-based Web Service on the free plan;
+- Singapore region;
+- Blueprint-managed from `render.yaml`;
+- `develop` branch;
+- one instance and one Uvicorn worker;
+- provider HTTPS URL, with no custom domain;
+- manual deployment (`autoDeployTrigger: off`);
+- platform health check at `/health/live`.
 
-Liveness is the platform restart/deploy probe. Readiness is checked separately
-after migration so a transient database outage is visible without conflating
-process health and dependency health. Free services can cold-start and are not
-appropriate for continuous production operations; this deployment is for
-production-lifecycle and portfolio validation.
+### Neon
 
-## Neon PostgreSQL
+- managed PostgreSQL production branch/database;
+- direct TLS connection used by the application and Alembic;
+- fresh production database with schema migration only;
+- no SQLite or development-data import.
 
-Create a fresh Neon project, database, and production role. Do not import the
-local SQLite or local PostgreSQL data. In Neon's Connect dialog select the
-direct connection string, require TLS, and preserve all percent-encoding in the
-credential. Change only the SQLAlchemy scheme:
+## Production URL
+
+https://editflow-1utp.onrender.com
+
+The free service may cold-start after inactivity. Permanent uptime is not a v1
+requirement.
+
+## Build And Runtime
+
+The repository-root multi-stage Dockerfile builds the Vite application with
+Node 22 Alpine, installs the pinned Python dependencies in a Python 3.13 slim
+runtime, copies the backend and its shared runtime data, and finally copies the
+built frontend. Uvicorn starts one worker and FastAPI serves both the API and
+the production SPA.
+
+Observed production result:
+
+- Docker image build passed;
+- FastAPI and Uvicorn startup passed;
+- React static assets and SPA fallback were served successfully;
+- the Render service reached Live;
+- `/` and the public HTTPS application returned 200.
+
+## Alembic Production Migration
+
+`alembic upgrade head` completed against the fresh Neon database before the
+application rollout. The resulting revision was:
 
 ```text
-postgresql://...  ->  postgresql+psycopg://...
+c4a8d2e91f37 (head)
 ```
 
-Use the direct connection for both Alembic and the application. This avoids
-PgBouncer transaction-mode migration limitations and is adequate for one small
-application instance. The Render Blueprint limits the SQLAlchemy pool to three
-persistent connections plus two overflow connections, with pre-ping, a
-30-second checkout timeout, and 300-second recycle. Revisit pooling only if
-measured load or the Neon plan requires it.
+Only the schema was migrated. Existing SQLite/development data was not copied.
+The application does not call `create_all`, and FastAPI startup does not run
+Alembic automatically. Migration remains an explicit release step before a
+schema-bearing rollout.
 
-## Account-side Handoff
+## Environment And Secrets Policy
 
-Perform these steps in order. Secret values are entered only in the provider
-dashboards or a private local shell.
+Required production settings include the production environment marker,
+managed database URL, exact HTTPS frontend origin, trusted Render hostname,
+Secure cookie policy, and a generated recommendation-signing secret. Provider
+keys are optional secrets and are never included in the image or browser
+bundle.
 
-1. In Neon, create the fresh production database and role, and copy its direct
-   TLS connection string.
-2. In a private local shell, set `ENVIRONMENT=production`, `DATABASE_URL` to
-   the converted `postgresql+psycopg` URL, the final HTTPS
-   `FRONTEND_ORIGINS`, matching host-only `TRUSTED_HOSTS`,
-   `AUTH_COOKIE_SECURE=true`, and `AUTH_COOKIE_SAMESITE=lax`.
-3. From `backend/`, run `alembic upgrade head`, then `alembic current`. The
-   expected revision is `c4a8d2e91f37`. Do not run a production downgrade.
-4. In Render choose **New > Blueprint**, connect this repository and branch,
-   review `render.yaml`, and create the service. If the final generated service
-   host differs from the planned host, update both values below before the
-   first manual deploy.
-5. Enter `DATABASE_URL`, `FRONTEND_ORIGINS`, and `TRUSTED_HOSTS` in Render.
-   Trigger a manual deploy only after the migration succeeds.
-6. Add optional `YOUTUBE_API_KEY`, `PEXELS_API_KEY`, and `LLM_API_KEY` only in
-   Render. Keep `LLM_LIVE_CALLS_ENABLED=false` until the bounded AI smoke.
+Production validation fails fast for unsafe or incomplete settings. Secret
+values are entered only in Render/Neon or a private migration shell; they are
+not committed, logged, or copied into documentation.
 
-`FRONTEND_ORIGINS` contains the complete origin, for example
-`https://SERVICE.onrender.com`. `TRUSTED_HOSTS` contains only the host, for
-example `SERVICE.onrender.com`. Do not set `VITE_API_BASE_URL` in production;
-the frontend then uses same-origin `/api` URLs.
+## Same-Origin Decision
 
-Render free Web Services do not provide the paid pre-deploy command used for a
-release migration. That is why the first migration is an explicit local
-one-time release step before the first manual deploy. For later schema-bearing
-releases, either repeat the migration-before-deploy sequence or move to a paid
-service and configure `cd backend && alembic upgrade head` as the pre-deploy
-command. Migrations never run in application startup.
+FastAPI serves the React production build instead of using a separate public
+frontend provider. This gives the browser one genuine origin for static files,
+API requests, and authentication cookies, while preserving host-only cookies,
+`SameSite=Lax`, and the existing CSRF design.
 
-## Frontend Static Serving
+A host-only cookie is not inherently impossible with separate frontend and
+backend origins. The actual incompatibility is that cross-site fetches would
+not send the current `SameSite=Lax` session cookie in the required way. Keeping
+one origin avoids redesigning that authentication boundary and is appropriate
+for this portfolio deployment.
 
-The runtime image places Vite output at `/app/dist`. `app/main.py` resolves the
-same repository-relative path on Linux. In production it fails at import if
-`dist/index.html` is absent. In development it does not require `dist`, and the
-existing Vite-on-5173 plus FastAPI-on-8000 workflow remains unchanged.
+## Health Verification
 
-Real API and health routes are registered first. Explicit JSON 404 guards for
-unknown `/api` and `/health` paths are next. A final Starlette `StaticFiles`
-mount securely serves existing build files and returns `index.html` only for
-frontend routes. It never constructs arbitrary filesystem paths. Thus:
+The public production endpoints returned:
 
-- `GET /projects/123` returns the SPA shell;
-- `GET /api/does-not-exist` returns JSON 404;
-- `GET /health/live` remains a FastAPI response;
-- assets and public files are served from `dist` only;
-- traversal cannot expose files outside `dist`.
+- `/health/live` -> 200;
+- `/health/ready` -> 200 after a live Neon query.
 
-Vite's current production build emits hashed JS/CSS and no source maps.
+The readiness response exposed no database address, credential, or other
+sensitive detail. This verified the Render -> FastAPI -> Neon connection.
 
-## Production Environment
+## Cookie, Session, And CSRF Verification
 
-Required Render values:
+Chrome Application inspection confirmed:
 
-- `ENVIRONMENT=production`
-- `DATABASE_URL` (secret)
-- `FRONTEND_ORIGINS` (exact HTTPS origin)
-- `TRUSTED_HOSTS` (exact hostname, no scheme)
-- `AUTH_COOKIE_SECURE=true`
-- `AUTH_COOKIE_SAMESITE=lax`
+| Cookie | Secure | HttpOnly | SameSite | Path | Scope |
+| --- | --- | --- | --- | --- | --- |
+| `editflow_session` | true | true | Lax | `/` | host-only |
+| `editflow_csrf` | true | false | Lax | `/` | host-only |
 
-Optional provider values are `YOUTUBE_API_KEY`, `PEXELS_API_KEY`, and
-`LLM_API_KEY`. Live AI additionally requires
-`LLM_RECOMMENDATION_SIGNING_SECRET` of at least 32 bytes; the Blueprint
-generates it. Production settings reject SQLite, loopback database hosts,
-placeholder database passwords, insecure cookies, wildcard origins/hosts,
-HTTP origins, and origin/host mismatches.
+The CSRF cookie is intentionally JavaScript-readable because the frontend
+copies it to the `X-CSRF-Token` header. Signup, login, `/me`, F5 session
+restoration, logout, and relogin passed in production.
 
-## Production QA Checklist
+## Ownership Verification
 
-Record timestamps and pass/fail results here only after testing the public URL.
-Never record secret values or raw response cookies.
+A second account attempted direct access to the first account's Project and
+its checklist items, memos, references, B-rolls, and source Content Idea
+relation. Every request returned the intended generic 404. The UI rendered
+`프로젝트를 찾을 수 없습니다.` without exposing resource existence.
 
-### Health, routing, and logs
+## Core Browser QA
 
-- [ ] `GET /health/live` returns 200 and `{"status":"ok"}`.
-- [ ] `GET /health/ready` returns 200 through a live Neon query.
-- [ ] Both responses contain a server-generated `X-Request-ID`.
-- [ ] `/`, `/projects`, `/projects/{id}`, `/ideas/{id}`, `/login`, and
-  `/signup` load or refresh through the SPA fallback.
-- [ ] `/api/does-not-exist` is JSON 404, never HTML.
-- [ ] Render logs contain request ID, method, path, status, and duration.
-- [ ] Logs contain no password, cookie, token, CSRF value, API key, database
-  URL, exception credential, or Neon host detail.
-- [ ] Cold and warm request durations are recorded separately; cold-start
-  latency is treated as a hosting characteristic, not an application defect.
+The following production workflows passed:
 
-### HTTPS, authentication, and CSRF
+- Project create, update, list, and detail;
+- checklist and memo operations;
+- Content Idea creation and Project conversion;
+- persistence after F5;
+- persistence after logout and relogin;
+- direct SPA route refresh;
+- cross-account ownership isolation.
 
-- [ ] Session cookie is Secure, HttpOnly, SameSite=Lax, host-only, Path=/, and
-  has the configured TTL.
-- [ ] CSRF cookie is Secure, JavaScript-readable, SameSite=Lax, host-only,
-  Path=/, and has the configured TTL.
-- [ ] Signup, login, `/me`, F5 session restore, logout, and relogin pass.
-- [ ] A valid unsafe request passes.
-- [ ] Missing and invalid CSRF headers return 403.
-- [ ] A controlled request with an invalid Origin returns 403.
+## AI Production Smoke
 
-### Browser workflow
+For one bounded smoke, `LLM_LIVE_CALLS_ENABLED` was temporarily enabled and the
+OpenAI key was supplied through the Render secret store. The production chain
+completed successfully:
 
-- [ ] Project create, update, list, detail, and child checklist/memo CRUD pass.
-- [ ] Content Idea creation and Project conversion pass.
-- [ ] A second account receives 404 for the first account's project.
-- [ ] One legacy import passes if legacy test data is available.
-- [ ] Direct `/projects/{id}` navigation and refresh preserve the session.
-
-The Windows browser harness covers the main flow, cookie attributes, CSRF
-negative cases, invalid origin, ownership isolation, and direct-route refresh:
-
-```powershell
-$env:QA_FRONTEND_URL = "https://SERVICE.onrender.com"
-$env:QA_API_URL = $env:QA_FRONTEND_URL
-node backend/scripts/postgresql_browser_qa.mjs
+```text
+Render FastAPI
+  -> OpenAI Responses API
+  -> Structured Output validation
+  -> recommendation UI (3 results)
+  -> signed save_token validation
+  -> Content Idea save
+  -> Neon persistence
 ```
 
-It creates timestamped QA accounts and records only statuses and cookie
-attributes, never cookie values. Remove QA data later only through an explicit,
-reviewed operation; no cleanup command is automated.
+The saved result remained visible after F5. After QA,
+`LLM_LIVE_CALLS_ENABLED=false` was restored as the normal operating policy.
 
-## AI And External API Smoke
+## Deployment Issue 1: Missing `public` Directory
 
-YouTube and Pexels are optional request-time checks. If keys are configured,
-perform one small search against each. For OpenAI, set the model supported by
-the account, enable `LLM_LIVE_CALLS_ENABLED`, perform exactly one recommendation
-request, verify structured recommendations render, save one recommendation via
-its save token, and verify Content Idea persistence. Then immediately set
-`LLM_LIVE_CALLS_ENABLED=false` and redeploy. If no key/budget is available,
-record the smoke as explicitly skipped; do not fabricate a pass.
+The first Render build failed at `COPY public ./public` because no Git-tracked
+`public` directory existed.
 
-## Local Verification Recorded Before Account Handoff
+- **Cause:** the Dockerfile copied a path not present in the repository.
+- **Fix:** verify that no required asset used the directory and remove only the
+  invalid `COPY public ./public` instruction. No empty placeholder directory
+  was added.
+- **Verification:** `npm ci` and `npm run build` produced the Vite `dist`
+  bundle successfully.
 
-- `pytest -q`: 382 passed, 12 PostgreSQL tests deselected.
-- static-serving tests: 9 passed.
-- `npm run build`: passed; 162 modules transformed; no source maps emitted.
-- `npm audit`: 0 vulnerabilities after a non-forced lockfile refresh within the
-  existing semver ranges (including React Router 7.18.4 and PostCSS 8.5.28).
-- Docker image build: not run because the local Docker daemon was unavailable.
-- `compileall`: passed.
-- `pip check`: no broken requirements.
-- `alembic heads`: one head, `c4a8d2e91f37`.
-- `alembic check`: no new upgrade operations detected against local SQLite.
-- production-mode in-process smoke: `/`, built asset, and `/projects/123` were
-  200; unknown API was JSON 404; liveness was 200; every response had an
-  `X-Request-ID`.
-- PostgreSQL integration: attempted, but all 12 setup paths were blocked by a
-  connection timeout because no local PostgreSQL service or Docker daemon was
-  running. The last recorded live-PostgreSQL baseline remains 12 passed; rerun
-  against Neon without the destructive `_test` harness.
-- whitespace check: run in the final verification pass and record its result.
+## Deployment Issue 2: Missing Shared Runtime Asset
 
-The local Python runtime was 3.14.3 and Node was 24.14.1. Deployment does not
-copy those versions blindly: the Docker image pins Python 3.13 and Node 22 LTS
-for provider compatibility and repeatability.
+The next image built, but FastAPI startup failed because
+`/app/shared/default-checklist.json` was absent.
 
-## Known Limitations And Service Policy
+- **Cause:** `shared` existed in the frontend build stage, but Docker stages do
+  not share files automatically. The Python runtime also loads this template.
+- **Fix:** add `COPY shared ./shared` to the runtime stage.
+- **Verification:** backend startup loaded the default checklist, and the
+  Render service reached Live.
 
-- Rate limits and recommendation save-token replay state are process-local, so
-  one Uvicorn worker and one Render instance are mandatory.
-- There is no Redis, autoscaling, HA, multi-region deployment, custom domain,
-  upload storage, or production data migration.
-- Render's filesystem is ephemeral and holds no authoritative application data.
-- A free service can sleep and cold-start.
-- This deployment validates the production lifecycle and security posture; it
-  is not a commitment to continuous public operation.
+The incident demonstrated that every runtime dependency must be copied into
+the final stage explicitly, even when it was available in an earlier stage.
 
-After QA, the recommended state is `LLM_LIVE_CALLS_ENABLED=false`, followed by
-suspending the Render service if the portfolio URL need not remain available.
-Deletion is appropriate only after the deployment evidence is captured and the
-user explicitly chooses to remove both service and database.
+## AI Configuration Fail-Fast Issue
 
-## Completion Gate
+The first AI smoke deployment enabled live calls without supplying
+`LLM_API_KEY`. Production config correctly rejected the new instance at
+startup. Render continued serving the previous healthy instance, whose live
+calls were still disabled.
 
-EditFlow v1 remains **on hold** until the account-side deployment, Neon
-migration, HTTPS/browser/security QA, logs review, and P0/P1 triage are
-complete. Missing Redis, multi-replica support, autoscaling, a custom domain,
-or permanent uptime are not v1 blockers. After every checklist item above is
-verified with no P0/P1 defect, update this status and the README with the real
-deployment URL and completion result.
+- **Cause:** an intentionally required production secret was missing.
+- **Fix:** add the key through Render's secret environment and redeploy.
+- **Verification:** the live recommendation and persistence chain passed.
+
+This confirmed both application fail-fast behavior and provider-side retention
+of the previously healthy service during a failed rollout.
+
+## Default Checklist Final Polish
+
+Production QA exposed the legacy `기본 체크리스트 복원` wording and an initial
+4/10 (40%) template state. The final behavior is:
+
+- show `기본 체크리스트 생성` only for an empty checklist;
+- create only after explicit user action, without a confirm dialog;
+- show disabled `생성 중…` during the mutation;
+- use the shared 10-item template with every item initially incomplete;
+- start at 0/10 and 0%;
+- use the atomic backend endpoint with a Project row lock;
+- reject a non-empty checklist with 409 and roll back on failure;
+- update server Projects only from the API response, with no localStorage
+  fallback.
+
+`shared/default-checklist.json` remains the single source of truth for both the
+empty-Project action and Content Idea -> Project conversion. Existing database
+rows were not migrated or rewritten.
+
+## Security And Operational Constraints
+
+- one backend process and one replica are the current contract;
+- rate-limit and save-token replay state are process-local;
+- there is no Redis, autoscaling, HA, or multi-region deployment;
+- there is no custom domain;
+- the Render filesystem is ephemeral;
+- free-tier cold starts are expected;
+- live AI calls are disabled by default;
+- no secret is stored in source control or frontend build output.
+
+These are explicit portfolio-scope constraints, not claims of commercial-scale
+operation.
+
+## Final QA Results
+
+| Area | Result |
+| --- | --- |
+| Neon fresh migration | Passed, `c4a8d2e91f37` |
+| Render Docker build/startup | Passed |
+| HTTPS root and health | Passed |
+| Neon readiness | Passed |
+| Session cookies and CSRF | Passed |
+| Signup/login/F5/logout/relogin | Passed |
+| Project and child workflow | Passed |
+| Content Idea conversion | Passed |
+| Ownership isolation | Passed with generic 404 |
+| SPA direct-route refresh | Passed |
+| AI live smoke and Neon persistence | Passed; live calls disabled afterward |
+| Default checklist polish | 10 items, 0/10, atomic/server-first |
+| Backend non-PostgreSQL regression | 386 passed in the final polish run |
+| Frontend production build | Passed |
+
+The Phase 11-3 PostgreSQL integration suite had already passed against live
+PostgreSQL. It was not rerun during the final documentation-only pass because
+no local PostgreSQL/Docker service was running.
+
+## Remaining Non-Blocking Limitations
+
+- free-tier cold start and no continuous-uptime guarantee;
+- one backend process/replica;
+- process-local rate limiter and recommendation replay state;
+- no Redis, custom domain, or automated PostgreSQL CI job;
+- no upload/publishing workflow;
+- no behavior-driven personalization model;
+- continuous operation and monetization are outside the v1 scope.
+
+Before horizontal scaling, security-sensitive limiter and replay state must
+move to shared storage or a gateway.
+
+## EditFlow v1 Completion
+
+**EditFlow v1: COMPLETE.**
+
+The completed scope includes the full-stack workflow, authenticated multi-user
+ownership, server-first data authority, AI recommendation and save flow,
+transactional Content Idea conversion, PostgreSQL compatibility and migration,
+managed database deployment, public HTTPS delivery, cookie/CSRF verification,
+ownership QA, and a production AI smoke.
+
+No P0/P1 blocker remained at completion. Future work is intentionally focused
+on upload/publishing, behavioral measurement and personalization, shared state
+for multi-replica operation, and CI automation rather than reopening the v1
+deployment gate.
