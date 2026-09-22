@@ -6,6 +6,8 @@ function ChecklistMemoPanel({
   error = null,
   onToggle,
   onRetry,
+  onImportDefault,
+  isImportingDefault = false,
   readOnly = false,
   isItemPending = () => false,
 }) {
@@ -58,7 +60,17 @@ function ChecklistMemoPanel({
         ) : (
           <div className="detail-checklist-empty">
             <strong>등록된 체크리스트가 없습니다.</strong>
-            <p>체크리스트 페이지에서 작업 항목을 추가할 수 있습니다.</p>
+            <p>편집 작업에 자주 사용하는 기본 항목을 추가합니다.</p>
+            {!readOnly && (
+              <button
+                className="primary-button"
+                disabled={isLoading || isImportingDefault}
+                onClick={onImportDefault}
+                type="button"
+              >
+                {isImportingDefault ? '불러오는 중…' : '기본 체크리스트 불러오기'}
+              </button>
+            )}
           </div>
         )}
       </div>

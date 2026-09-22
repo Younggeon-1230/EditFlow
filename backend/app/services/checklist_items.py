@@ -5,6 +5,11 @@ from app.models.checklist_item import ChecklistItem
 from app.models.project import Project
 from app.core.datetime import utc_now
 from app.schemas.checklist_item import ChecklistItemCreate, ChecklistItemUpdate
+from app.services.default_checklist import add_default_checklist_items
+
+
+class ChecklistNotEmptyError(Exception):
+    pass
 
 
 def list_checklist_items(
@@ -24,6 +29,12 @@ def create_checklist_item(
     project_id: int,
     item_create: ChecklistItemCreate,
 ) -> ChecklistItem:
+    # Coordinate manual creates with a concurrent default-template import.
+    session.exec(
+        select(Project)
+        .where(Project.id == project_id)
+        .with_for_update()
+    ).one()
     item_data = item_create.model_dump(exclude={"position"})
     position = item_create.position
     if position is None:
@@ -42,6 +53,36 @@ def create_checklist_item(
     session.commit()
     session.refresh(item)
     return item
+
+
+def create_default_checklist(
+    session: Session,
+    project_id: int,
+) -> list[ChecklistItem]:
+    # Lock the parent row so concurrent imports for the same project serialize.
+    session.exec(
+        select(Project)
+        .where(Project.id == project_id)
+        .with_for_update()
+    ).one()
+    existing_item = session.exec(
+        select(ChecklistItem.id)
+        .where(ChecklistItem.project_id == project_id)
+        .limit(1)
+    ).first()
+    if existing_item is not None:
+        session.rollback()
+        raise ChecklistNotEmptyError
+
+    try:
+        items = add_default_checklist_items(session, project_id)
+        session.commit()
+        for item in items:
+            session.refresh(item)
+        return items
+    except Exception:
+        session.rollback()
+        raise
 
 
 def get_owned_checklist_item(

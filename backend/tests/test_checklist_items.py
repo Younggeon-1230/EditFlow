@@ -1,11 +1,13 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.models.checklist_item import ChecklistItem
 from app.models.project import Project
 from app.models.user import User
+from app.services.default_checklist import DEFAULT_CHECKLIST_TEMPLATE
+from app.services import checklist_items as checklist_item_service
 
 
 def create_project(client: TestClient, title: str = "Checklist project") -> dict:
@@ -48,6 +50,97 @@ def test_create_checklist_item(client: TestClient) -> None:
     assert item["position"] == 3
     assert item["created_at"]
     assert item["updated_at"]
+
+
+def test_create_default_checklist_for_empty_project(client: TestClient) -> None:
+    project = create_project(client)
+
+    response = client.post(
+        f"/api/projects/{project['id']}/checklist-items/default",
+    )
+
+    assert response.status_code == 201
+    items = response.json()
+    assert [item["title"] for item in items] == [
+        item["text"] for item in DEFAULT_CHECKLIST_TEMPLATE
+    ]
+    assert [item["is_completed"] for item in items] == [
+        item["done"] for item in DEFAULT_CHECKLIST_TEMPLATE
+    ]
+    assert [item["position"] for item in items] == list(range(len(items)))
+    assert client.get(
+        f"/api/projects/{project['id']}/checklist-items"
+    ).json() == items
+
+
+def test_default_checklist_rejects_non_empty_project_without_changes(
+    client: TestClient,
+) -> None:
+    project = create_project(client)
+    existing = create_checklist_item(client, project["id"], "Keep me")
+
+    response = client.post(
+        f"/api/projects/{project['id']}/checklist-items/default",
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Checklist is not empty"
+    assert client.get(
+        f"/api/projects/{project['id']}/checklist-items"
+    ).json() == [existing]
+
+
+def test_default_checklist_retry_does_not_create_duplicates(
+    client: TestClient,
+) -> None:
+    project = create_project(client)
+    endpoint = f"/api/projects/{project['id']}/checklist-items/default"
+
+    first = client.post(endpoint)
+    retry = client.post(endpoint)
+
+    assert first.status_code == 201
+    assert retry.status_code == 409
+    assert client.get(
+        f"/api/projects/{project['id']}/checklist-items"
+    ).json() == first.json()
+
+
+def test_default_checklist_rolls_back_if_template_creation_fails(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    test_engine: Engine,
+) -> None:
+    project = create_project(client)
+
+    def fail_after_first_insert(session: Session, project_id: int) -> None:
+        session.add(
+            ChecklistItem(
+                project_id=project_id,
+                title="Partial item",
+                position=0,
+            )
+        )
+        session.flush()
+        raise RuntimeError("template creation failed")
+
+    monkeypatch.setattr(
+        checklist_item_service,
+        "add_default_checklist_items",
+        fail_after_first_insert,
+    )
+
+    with pytest.raises(RuntimeError, match="template creation failed"):
+        client.post(
+            f"/api/projects/{project['id']}/checklist-items/default",
+        )
+
+    with Session(test_engine) as session:
+        assert session.exec(
+            select(ChecklistItem).where(
+                ChecklistItem.project_id == project["id"],
+            )
+        ).all() == []
 
 
 def test_omitted_position_uses_project_maximum_plus_one(
@@ -227,6 +320,12 @@ def test_other_users_checklist_items_are_hidden(
         client.post(
             f"/api/projects/{project_id}/checklist-items",
             json={"title": "Intrusion"},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.post(
+            f"/api/projects/{project_id}/checklist-items/default",
         ).status_code
         == 404
     )

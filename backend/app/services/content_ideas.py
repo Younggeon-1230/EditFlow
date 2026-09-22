@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 from typing import Any
 
 from sqlalchemy import case, delete, exists, func, or_
@@ -15,7 +14,6 @@ from app.models.content_idea import (
 )
 from app.models.content_idea_broll import ContentIdeaBroll
 from app.models.content_idea_reference import ContentIdeaReference
-from app.models.checklist_item import ChecklistItem
 from app.models.project_memo import ProjectMemo
 from app.core.datetime import utc_now
 from app.models.project import Project
@@ -34,6 +32,10 @@ from app.schemas.content_idea import (
     normalize_tags as _normalize_tags,
 )
 from app.schemas.project import ProjectRead
+from app.services.default_checklist import (
+    DEFAULT_CHECKLIST_TEMPLATE,
+    add_default_checklist_items,
+)
 
 
 class ContentIdeaNotFoundError(Exception):
@@ -48,34 +50,6 @@ class ContentIdeaConversionConflictError(Exception):
 
 class ContentIdeaMediaSelectionError(Exception):
     pass
-
-
-def _load_default_checklist_template() -> tuple[dict[str, Any], ...]:
-    template_path = Path(__file__).resolve().parents[3] / "shared" / "default-checklist.json"
-    with template_path.open(encoding="utf-8") as template_file:
-        items = json.load(template_file)
-    return tuple(items)
-
-
-DEFAULT_CHECKLIST_TEMPLATE = _load_default_checklist_template()
-
-
-def _add_default_checklist_items(
-    session: Session,
-    project_id: int,
-) -> list[ChecklistItem]:
-    items = [
-        ChecklistItem(
-            project_id=project_id,
-            title=template_item["text"],
-            description=None,
-            is_completed=template_item["done"],
-            position=position,
-        )
-        for position, template_item in enumerate(DEFAULT_CHECKLIST_TEMPLATE)
-    ]
-    session.add_all(items)
-    return items
 
 
 def _add_initial_memo(
@@ -506,7 +480,7 @@ def convert_content_idea_to_project(
             idea_brolls,
         )
         checklist_items = (
-            _add_default_checklist_items(session, project.id)
+            add_default_checklist_items(session, project.id)
             if data.create_default_checklist
             else []
         )

@@ -1254,6 +1254,11 @@ a {
   margin: 8px 0 0;
 }
 
+.detail-checklist-empty .primary-button,
+.checklist-list-empty .primary-button {
+  margin-top: 18px;
+}
+
 .detail-memos li {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);

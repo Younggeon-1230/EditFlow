@@ -4,8 +4,9 @@ function ChecklistPanel({
   items,
   onToggle,
   onDelete,
-  onReset,
+  onImportDefault,
   disabled = false,
+  isImportingDefault = false,
 }) {
   return (
     <section className="checklist-list-card">
@@ -16,9 +17,6 @@ function ChecklistPanel({
         </div>
         <div className="checklist-list-actions">
           <span>{items.length}개 항목</span>
-          <button disabled={disabled} onClick={onReset} type="button">
-            기본 체크리스트 복원
-          </button>
         </div>
       </div>
 
@@ -38,7 +36,15 @@ function ChecklistPanel({
       ) : (
         <div className="checklist-list-empty">
           <strong>등록된 작업 항목이 없습니다.</strong>
-          <p>아래 입력창에서 첫 번째 편집 작업을 추가하세요.</p>
+          <p>직접 추가하거나, 편집 작업에 자주 사용하는 기본 항목을 불러오세요.</p>
+          <button
+            className="primary-button"
+            disabled={disabled}
+            onClick={onImportDefault}
+            type="button"
+          >
+            {isImportingDefault ? '불러오는 중…' : '기본 체크리스트 불러오기'}
+          </button>
         </div>
       )}
     </section>

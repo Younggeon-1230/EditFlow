@@ -17,26 +17,15 @@ function ChecklistPage() {
     completedCount,
     isLoading,
     isSaving,
+    isImportingDefault,
     isSyncedProject,
     error,
     addItem,
     toggleItem,
     deleteItem,
-    resetChecklist,
+    importDefaultChecklist,
     refetch,
   } = useChecklist(selectedProject?.projectTarget ?? null)
-
-  async function handleResetChecklist() {
-    const shouldReset = window.confirm(
-      isSyncedProject
-        ? '서버 체크리스트를 기본 항목으로 복원할까요? 일괄 교체 API가 없어 중간 실패 시 일부 항목이 남을 수 있습니다.'
-        : '현재 체크리스트를 기본 항목으로 복원할까요? 직접 추가한 항목은 사라질 수 있습니다.',
-    )
-
-    if (shouldReset) {
-      await resetChecklist()
-    }
-  }
 
   return (
     <main className="checklist-page">
@@ -72,9 +61,10 @@ function ChecklistPage() {
           />
           <ChecklistPanel
             disabled={isSaving || isLoading}
+            isImportingDefault={isImportingDefault}
             items={items}
             onDelete={deleteItem}
-            onReset={handleResetChecklist}
+            onImportDefault={importDefaultChecklist}
             onToggle={toggleItem}
           />
           <ChecklistForm

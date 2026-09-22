@@ -449,7 +449,7 @@ def test_checklist_failure_rolls_back_entire_conversion(
 
     monkeypatch.setattr(
         content_idea_service,
-        "_add_default_checklist_items",
+        "add_default_checklist_items",
         fail_after_one_item,
     )
     with Session(test_engine) as session:

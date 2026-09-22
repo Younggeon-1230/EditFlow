@@ -23,6 +23,7 @@ from app.schemas.project import LocalProjectImport
 from app.schemas.content_idea import ContentIdeaConversionCreate
 from app.schemas.content_idea_recommendation import RecommendationTokenPayload
 from app.services import content_ideas as content_idea_service
+from app.services import checklist_items as checklist_item_service
 from app.services import projects as project_service
 from app.services.auth import lookup_auth_context, token_digest
 from app.services.content_idea_recommendations import (
@@ -31,6 +32,7 @@ from app.services.content_idea_recommendations import (
     save_recommendation,
     sign_save_token,
 )
+from app.services.default_checklist import DEFAULT_CHECKLIST_TEMPLATE
 
 
 pytestmark = pytest.mark.postgresql
@@ -381,6 +383,45 @@ def test_concurrent_canonical_signup_creates_one_user(
     with Session(postgresql_engine) as session:
         users = session.exec(select(User).where(User.email == "race@example.com")).all()
         assert len(users) == 1
+
+
+def test_concurrent_default_checklist_import_creates_one_template(
+    postgresql_engine: Engine,
+) -> None:
+    with Session(postgresql_engine) as session:
+        user = _user("checklist-race@example.com")
+        session.add(user)
+        session.flush()
+        project = Project(user_id=user.id, title="Checklist race")
+        session.add(project)
+        session.commit()
+        project_id = project.id
+
+    barrier = Barrier(2)
+
+    def import_template() -> str:
+        with Session(postgresql_engine) as session:
+            barrier.wait(timeout=10)
+            try:
+                checklist_item_service.create_default_checklist(
+                    session,
+                    project_id,
+                )
+                return "created"
+            except checklist_item_service.ChecklistNotEmptyError:
+                return "conflict"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(lambda _: import_template(), range(2)))
+
+    assert sorted(outcomes) == ["conflict", "created"]
+    with Session(postgresql_engine) as session:
+        items = session.exec(
+            select(ChecklistItem).where(
+                ChecklistItem.project_id == project_id,
+            )
+        ).all()
+        assert len(items) == len(DEFAULT_CHECKLIST_TEMPLATE)
 
 
 def test_conversion_commits_all_rows_and_rolls_back_partial_failure(

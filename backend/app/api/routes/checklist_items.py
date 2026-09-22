@@ -68,6 +68,28 @@ def create_checklist_item(
     )
 
 
+@router.post(
+    "/api/projects/{project_id}/checklist-items/default",
+    response_model=list[ChecklistItemRead],
+    status_code=status.HTTP_201_CREATED,
+)
+def create_default_checklist(
+    project: OwnedProjectDependency,
+    session: SessionDependency,
+) -> list[ChecklistItem]:
+    assert project.id is not None
+    try:
+        return checklist_item_service.create_default_checklist(
+            session,
+            project.id,
+        )
+    except checklist_item_service.ChecklistNotEmptyError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Checklist is not empty",
+        ) from error
+
+
 @router.patch(
     "/api/checklist-items/{item_id}",
     response_model=ChecklistItemRead,

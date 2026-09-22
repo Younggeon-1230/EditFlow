@@ -3,6 +3,7 @@ import { ApiError, requestJson } from './apiClient.js'
 const CHECKLIST_ERROR_MESSAGES = {
   400: '수정할 체크리스트 내용이 없습니다.',
   404: '프로젝트 또는 체크리스트 항목을 찾을 수 없습니다.',
+  409: '이미 체크리스트 항목이 있어 기본 체크리스트를 불러올 수 없습니다.',
   422: '체크리스트 정보를 확인해 주세요.',
 }
 
@@ -114,6 +115,23 @@ export async function createChecklistItem(
     },
   )
   return mapChecklistItem(created)
+}
+
+export async function createDefaultChecklist(backendProjectId, signal) {
+  assertPositiveInteger(
+    backendProjectId,
+    '이 프로젝트는 아직 서버와 동기화되지 않았습니다.',
+  )
+  const items = await requestJson(
+    `/api/projects/${backendProjectId}/checklist-items/default`,
+    {
+      method: 'POST',
+      signal,
+      errorMessages: CHECKLIST_ERROR_MESSAGES,
+      fallbackErrorMessage: '기본 체크리스트를 불러오지 못했습니다.',
+    },
+  )
+  return sortChecklistItems((items ?? []).map(mapChecklistItem))
 }
 
 export async function updateChecklistItem(itemId, changes, signal) {

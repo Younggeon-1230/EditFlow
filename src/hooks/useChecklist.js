@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import initialChecklist, {
   defaultChecklistTemplate,
 } from '../data/initialChecklist.js'
-import { ApiError } from '../services/apiClient.js'
 import {
   createChecklistItem,
+  createDefaultChecklist,
   deleteChecklistItem,
   getChecklistItems,
   updateChecklistItem,
@@ -117,7 +117,7 @@ function useChecklist(projectTarget) {
   const [itemsBackendProjectId, setItemsBackendProjectId] = useState(null)
   const [isLoadingState, setIsLoadingState] = useState(false)
   const [pendingKeys, setPendingKeys] = useState(() => new Set())
-  const [isResetting, setIsResetting] = useState(false)
+  const [isImportingDefault, setIsImportingDefault] = useState(false)
   const [error, setError] = useState(null)
   const listController = useRef(null)
   const listSequence = useRef(0)
@@ -152,7 +152,7 @@ function useChecklist(projectTarget) {
     isSyncedProject && itemsBackendProjectId !== backendProjectId
   const isLoading = isLoadingState || isWaitingForProject
   const isSaving =
-    pendingKeys.size > 0 || isResetting
+    pendingKeys.size > 0 || isImportingDefault
 
   useEffect(() => {
     if (projectTarget?.kind === 'local') {
@@ -239,7 +239,7 @@ function useChecklist(projectTarget) {
     exclusiveController.current?.abort()
     exclusiveController.current = null
     setPendingKeys(new Set())
-    setIsResetting(false)
+    setIsImportingDefault(false)
 
     return () => {
       mutationControllers.current.forEach((controller) => controller.abort())
@@ -481,18 +481,14 @@ function useChecklist(projectTarget) {
     }
   }
 
-  async function resetChecklist(targetProjectId = projectId) {
-    if (!targetProjectId) {
+  async function importDefaultChecklist(targetProjectId = projectId) {
+    if (!targetProjectId || items.length > 0) {
       return false
     }
 
-    const template = Array.isArray(initialChecklist[targetProjectId])
-      ? initialChecklist[targetProjectId]
-      : defaultChecklistTemplate
-
     if (!isSyncedProject) {
       updateLocalProjectItems(
-        () => cloneChecklistItems(template),
+        () => cloneChecklistItems(defaultChecklistTemplate),
         targetProjectId,
       )
       return true
@@ -505,81 +501,38 @@ function useChecklist(projectTarget) {
     const targetBackendProjectId = backendProjectId
     const controller = new AbortController()
     exclusiveController.current = controller
-    setIsResetting(true)
+    setIsImportingDefault(true)
     setError(null)
-    const createdItems = []
 
     try {
-      try {
-        for (const [index, templateItem] of template.entries()) {
-          createdItems.push(
-            await createChecklistItem(
-              targetBackendProjectId,
-              {
-                title: templateItem.text,
-                description: templateItem.description ?? null,
-                isCompleted: templateItem.done,
-                position: index,
-              },
-              controller.signal,
-              { includePosition: true },
-            ),
-          )
-        }
-      } catch (createError) {
-        if (createError.name !== 'AbortError') {
-          for (const createdItem of createdItems) {
-            try {
-              await deleteChecklistItem(
-                createdItem.id,
-                controller.signal,
-              )
-            } catch {
-              // A final refetch below exposes any cleanup failure.
-            }
-          }
-          if (
-            isMounted.current &&
-            currentBackendProjectId.current === targetBackendProjectId
-          ) {
-            await loadServerItems()
-            setError(
-              '기본 체크리스트 복원에 실패했습니다. 서버 목록을 다시 확인해 주세요.',
-            )
-          }
-        }
-        return false
-      }
-
-      let deleteFailed = false
-      for (const oldItem of visibleServerItems) {
-        try {
-          await deleteChecklistItem(
-            oldItem.id,
-            controller.signal,
-          )
-        } catch (deleteError) {
-          if (deleteError.name === 'AbortError') {
-            return false
-          }
-          if (!(deleteError instanceof ApiError && deleteError.status === 404)) {
-            deleteFailed = true
-          }
-        }
-      }
-
+      const createdItems = await createDefaultChecklist(
+        targetBackendProjectId,
+        controller.signal,
+      )
       if (
         isMounted.current &&
         currentBackendProjectId.current === targetBackendProjectId
       ) {
+        setServerItems(
+          createdItems.map((item) => ({ ...item, projectId })),
+        )
+      }
+      return true
+    } catch (createError) {
+      if (
+        createError.name !== 'AbortError' &&
+        isMounted.current &&
+        currentBackendProjectId.current === targetBackendProjectId
+      ) {
         await loadServerItems()
-        if (deleteFailed) {
-          setError(
-            '기본 체크리스트가 일부만 복원되었습니다. 서버 목록을 확인해 주세요.',
-          )
+        if (
+          isMounted.current &&
+          currentBackendProjectId.current === targetBackendProjectId
+        ) {
+          setError(createError.message || '기본 체크리스트를 불러오지 못했습니다.')
         }
       }
-      return !deleteFailed
+      return false
     } finally {
       if (exclusiveController.current === controller) {
         exclusiveController.current = null
@@ -588,7 +541,7 @@ function useChecklist(projectTarget) {
         isMounted.current &&
         currentBackendProjectId.current === targetBackendProjectId
       ) {
-        setIsResetting(false)
+        setIsImportingDefault(false)
       }
     }
   }
@@ -599,7 +552,7 @@ function useChecklist(projectTarget) {
     progress,
     isLoading,
     isSaving,
-    isResetting,
+    isImportingDefault,
     error,
     storageMode: isSyncedProject ? 'server' : 'local',
     isSyncedProject,
@@ -608,7 +561,7 @@ function useChecklist(projectTarget) {
     toggleItem,
     isItemPending,
     deleteItem,
-    resetChecklist,
+    importDefaultChecklist,
     refetch: loadServerItems,
   }
 }
