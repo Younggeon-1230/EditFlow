@@ -376,6 +376,7 @@ EditFlow/
 - Phase 11-3: Docker Compose PostgreSQL, live migration, integration/concurrency/browser QA
 - Phase 11-4: production fail-fast config, Secure cookie, trusted hosts, health probes, request ID와 DB pool policy
 - Phase 11-5: Render + Neon actual deployment, production browser/security/AI smoke, default checklist final polish
+- Phase 11-6: repository-wide dead-code audit, minimal cleanup, and v1 freeze
 
 ### Phase 11
 
@@ -383,6 +384,7 @@ EditFlow/
 - **11-3:** local/dev PostgreSQL과 migration-backed integration test 완료
 - **11-4:** production config, Secure cookie, readiness, logging, seed/startup policy 완료
 - **11-5:** Render same-origin Web Service와 Neon PostgreSQL 배포, production smoke 완료
+- **11-6:** dead code/dependency/env/artifact audit와 전체 regression 완료; v1 baseline 동결
 
 **EditFlow v1: COMPLETE.** Full-stack workflow, 인증과 ownership, server-first 전환, AI recommendation, managed PostgreSQL, HTTPS cloud deployment와 production security QA까지 계획한 v1 범위를 완료했습니다. P0/P1 production blocker는 확인되지 않았습니다.
 
@@ -408,4 +410,5 @@ EditFlow/
 - [Phase 11-3: PostgreSQL Local And Development Integration](docs/phase-11-3-postgresql-local-integration.md)
 - [Phase 11-4: Production Config And Security](docs/phase-11-4-production-config-security.md)
 - [Phase 11-5: Actual Deployment And v1 Completion](docs/phase-11-5-actual-deployment.md)
+- [Phase 11-6: Final Cleanup And v1 Freeze](docs/phase-11-6-final-cleanup-freeze.md)
 - [1학기 Frontend MVP 발표 코드 가이드](docs/presentation-code-guide.md) - historical document

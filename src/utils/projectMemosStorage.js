@@ -23,13 +23,3 @@ export function persistProjectMemos(storageKey, memosByProject) {
     // Keep local memo editing available in memory when storage is blocked.
   }
 }
-
-export function removeStoredProjectMemos(storageKey, projectId) {
-  const memosByProject = loadStoredProjectMemos(storageKey)
-  if (!Object.prototype.hasOwnProperty.call(memosByProject, projectId)) {
-    return
-  }
-  const next = { ...memosByProject }
-  delete next[projectId]
-  persistProjectMemos(storageKey, next)
-}

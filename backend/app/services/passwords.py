@@ -21,10 +21,3 @@ def verify_password(password_hash: str, password: str) -> bool:
 
 def verify_dummy_password(password: str) -> None:
     verify_password(_DUMMY_PASSWORD_HASH, password)
-
-
-def password_needs_rehash(password_hash: str) -> bool:
-    try:
-        return _password_hasher.check_needs_rehash(password_hash)
-    except InvalidHashError:
-        return False

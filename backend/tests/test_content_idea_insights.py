@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.models.content_idea import ContentIdea
 from app.models.content_idea_broll import ContentIdeaBroll

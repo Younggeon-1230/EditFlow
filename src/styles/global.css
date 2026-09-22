@@ -2373,30 +2373,6 @@ a {
   text-align: center;
 }
 
-.checklist-sync-notice {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  margin-top: 18px;
-  padding: 18px 22px;
-  border: 1px solid var(--color-border);
-  border-radius: 13px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
-}
-
-.checklist-sync-notice p {
-  margin: 6px 0 0;
-  color: var(--color-muted);
-  font-size: 0.84rem;
-}
-
-.checklist-sync-notice button {
-  flex: 0 0 auto;
-  min-height: 42px;
-}
-
 .checklist-no-project h2 {
   margin: 0;
   color: #555;
@@ -3013,15 +2989,6 @@ a {
   .projects-section-heading {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .checklist-sync-notice {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .checklist-sync-notice button {
-    width: 100%;
   }
 
   .checklist-project-selector select {
