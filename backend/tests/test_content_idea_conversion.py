@@ -117,12 +117,15 @@ def test_conversion_creates_shared_default_checklist_in_template_order(
     items = client.get(
         f"/api/projects/{project['id']}/checklist-items"
     ).json()
-    assert project["checklist_total"] == len(
-        content_idea_service.DEFAULT_CHECKLIST_TEMPLATE
+    assert len(content_idea_service.DEFAULT_CHECKLIST_TEMPLATE) == 10
+    assert all(
+        item["done"] is False
+        for item in content_idea_service.DEFAULT_CHECKLIST_TEMPLATE
     )
-    assert project["checklist_completed"] == sum(
-        item["done"] for item in content_idea_service.DEFAULT_CHECKLIST_TEMPLATE
-    )
+    assert project["checklist_total"] == 10
+    assert project["checklist_completed"] == 0
+    assert len(items) == 10
+    assert all(item["is_completed"] is False for item in items)
     assert [item["title"] for item in items] == [
         item["text"] for item in content_idea_service.DEFAULT_CHECKLIST_TEMPLATE
     ]

@@ -36,14 +36,14 @@ function ChecklistPanel({
       ) : (
         <div className="checklist-list-empty">
           <strong>등록된 작업 항목이 없습니다.</strong>
-          <p>직접 추가하거나, 편집 작업에 자주 사용하는 기본 항목을 불러오세요.</p>
+          <p>EditFlow에서 기본적으로 제공하는 체크리스트를 생성할 수 있습니다. 생성한 항목은 자유롭게 수정할 수 있습니다.</p>
           <button
             className="primary-button"
             disabled={disabled}
             onClick={onImportDefault}
             type="button"
           >
-            {isImportingDefault ? '불러오는 중…' : '기본 체크리스트 불러오기'}
+            {isImportingDefault ? '생성 중…' : '기본 체크리스트 생성'}
           </button>
         </div>
       )}

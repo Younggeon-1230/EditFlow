@@ -60,7 +60,7 @@ function ChecklistMemoPanel({
         ) : (
           <div className="detail-checklist-empty">
             <strong>등록된 체크리스트가 없습니다.</strong>
-            <p>편집 작업에 자주 사용하는 기본 항목을 추가합니다.</p>
+            <p>EditFlow에서 기본적으로 제공하는 체크리스트를 생성할 수 있습니다. 생성한 항목은 자유롭게 수정할 수 있습니다.</p>
             {!readOnly && (
               <button
                 className="primary-button"
@@ -68,7 +68,7 @@ function ChecklistMemoPanel({
                 onClick={onImportDefault}
                 type="button"
               >
-                {isImportingDefault ? '불러오는 중…' : '기본 체크리스트 불러오기'}
+                {isImportingDefault ? '생성 중…' : '기본 체크리스트 생성'}
               </button>
             )}
           </div>

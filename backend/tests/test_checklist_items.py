@@ -55,12 +55,17 @@ def test_create_checklist_item(client: TestClient) -> None:
 def test_create_default_checklist_for_empty_project(client: TestClient) -> None:
     project = create_project(client)
 
+    assert len(DEFAULT_CHECKLIST_TEMPLATE) == 10
+    assert all(item["done"] is False for item in DEFAULT_CHECKLIST_TEMPLATE)
+
     response = client.post(
         f"/api/projects/{project['id']}/checklist-items/default",
     )
 
     assert response.status_code == 201
     items = response.json()
+    assert len(items) == 10
+    assert all(item["is_completed"] is False for item in items)
     assert [item["title"] for item in items] == [
         item["text"] for item in DEFAULT_CHECKLIST_TEMPLATE
     ]
@@ -71,6 +76,9 @@ def test_create_default_checklist_for_empty_project(client: TestClient) -> None:
     assert client.get(
         f"/api/projects/{project['id']}/checklist-items"
     ).json() == items
+    project_summary = client.get(f"/api/projects/{project['id']}").json()
+    assert project_summary["checklist_total"] == 10
+    assert project_summary["checklist_completed"] == 0
 
 
 def test_default_checklist_rejects_non_empty_project_without_changes(
